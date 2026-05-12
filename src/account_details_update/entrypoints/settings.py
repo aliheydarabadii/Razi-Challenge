@@ -1,4 +1,4 @@
-"""Runtime configuration for the browser and API adapters."""
+"""Application settings loaded from environment variables and .env file."""
 
 from __future__ import annotations
 

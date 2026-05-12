@@ -11,9 +11,9 @@ from ..browser.playwright_account_updater import PlaywrightAccountUpdater
 from ..http_api import RaziApiError
 from ..http_api.api_account_updater import ApiAccountUpdater
 from ..http_api.razi_api_client import RaziApiClient
-from ..infrastructure.config import Settings, load_settings
 from ..support.logging import configure_logging
 from ..update_account_details import UpdateAccountDetails
+from .settings import Settings, load_settings
 
 
 def build_parser() -> argparse.ArgumentParser:
