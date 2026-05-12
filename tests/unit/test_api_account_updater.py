@@ -88,7 +88,7 @@ def test_complete_mfa_retries_when_mfa_session_lands_on_different_instance() -> 
     updater.complete_mfa()
 
     assert fake_client.calls.count("request_token") == 3  # 1 login + 2 retries
-    assert fake_client.calls.count("verify_mfa") == 3     # 2 failures + 1 success
+    assert fake_client.calls.count("verify_mfa") == 3  # 2 failures + 1 success
 
 
 def test_complete_mfa_raises_after_exhausting_retries() -> None:

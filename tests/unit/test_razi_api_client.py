@@ -6,7 +6,7 @@ import httpx
 import pytest
 
 from account_details_update import BankingDetails, PaymentMethod
-from account_details_update.http_api.errors import (
+from account_details_update.http_api import (
     AuthenticationError,
     MfaVerificationError,
     RateLimitError,
@@ -41,6 +41,7 @@ def _make_client(
 
 
 # ── request_token ─────────────────────────────────────────────────────────────
+
 
 def test_request_token_posts_credentials_and_returns_token_response() -> None:
     response = httpx.Response(
@@ -78,6 +79,7 @@ def test_request_token_raises_rate_limit_error_on_429() -> None:
 
 
 # ── native auth path ─────────────────────────────────────────────────────────
+
 
 def test_request_token_uses_native_supabase_auth_when_anon_key_set() -> None:
     response = httpx.Response(
@@ -118,6 +120,7 @@ def test_verify_mfa_returns_cached_native_token_without_http_call() -> None:
 
 # ── verify_mfa (custom flow) ──────────────────────────────────────────────────
 
+
 def test_verify_mfa_posts_token_and_code_returns_bearer_token() -> None:
     response = httpx.Response(
         200,
@@ -146,15 +149,14 @@ def test_verify_mfa_raises_mfa_error_on_401() -> None:
     client, _ = _make_client(
         post_response=httpx.Response(401, json={"error": "Invalid MFA code"})
     )
-    token_response = TokenResponse(
-        mfa_required=True, mfa_token="mfa_bad", message="ok"
-    )
+    token_response = TokenResponse(mfa_required=True, mfa_token="mfa_bad", message="ok")
 
     with pytest.raises(MfaVerificationError, match="Invalid MFA code"):
         client.verify_mfa(token_response)
 
 
 # ── update_banking ────────────────────────────────────────────────────────────
+
 
 def test_update_banking_puts_with_bearer_and_returns_masked_confirmation() -> None:
     response = httpx.Response(
@@ -190,6 +192,7 @@ def test_update_banking_raises_validation_error_on_422() -> None:
 
 
 # ── update_payment ────────────────────────────────────────────────────────────
+
 
 def test_update_payment_puts_with_bearer_and_returns_masked_confirmation() -> None:
     response = httpx.Response(

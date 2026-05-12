@@ -19,6 +19,7 @@ class ApiResponse(BaseModel):
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
+
 class TokenRequest(ApiRequest):
     email: str
     password: str
@@ -43,6 +44,7 @@ class MfaVerifyResponse(ApiResponse):
 
 
 # ── Account updates ───────────────────────────────────────────────────────────
+
 
 class BankingUpdateRequest(ApiRequest):
     routing_number: str
