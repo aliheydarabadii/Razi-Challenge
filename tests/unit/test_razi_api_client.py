@@ -8,11 +8,14 @@ from tenacity import Retrying, retry_if_exception_type, stop_after_attempt, wait
 
 from account_details_update import BankingDetails, PaymentMethod
 from account_details_update.http_api import (
+    ApiValidationError,
     AuthenticationError,
     MfaVerificationError,
     RateLimitError,
-    ValidationError,
 )
+from unittest.mock import patch
+
+from account_details_update.http_api.errors import ServerError
 from account_details_update.http_api.razi_api_client import _RETRYABLE, RaziApiClient
 from account_details_update.http_api.schemas import TokenResponse
 
@@ -207,7 +210,7 @@ def test_update_banking_raises_validation_error_on_422() -> None:
     )
     banking = BankingDetails(routing_number="123456789", account_number="1234567890")
 
-    with pytest.raises(ValidationError, match="Invalid routing number"):
+    with pytest.raises(ApiValidationError, match="Invalid routing number"):
         client.update_banking("bearer", banking)
 
 
@@ -326,46 +329,50 @@ def test_request_token_raises_after_exhausting_retries() -> None:
     assert http.post.call_count == 5
 
 
-# ── authenticate ─────────────────────────────────────────────────────────────
+# ── close / resource ownership ────────────────────────────────────────────────
 
 
-@pytest.mark.parametrize(
-    "failures, max_retries, should_succeed",
-    [
-        (0, 3, True),  # no routing miss — success immediately
-        (1, 3, True),  # one miss — success mid-run
-        (2, 3, True),  # boundary: max_retries-1 misses — success on last attempt
-        (3, 3, False),  # all attempts exhausted — raises
-    ],
-)
-def test_authenticate_retry_behaviour(
-    failures: int, max_retries: int, should_succeed: bool
-) -> None:
-    from unittest.mock import MagicMock, patch
+def test_close_does_not_close_injected_http_client() -> None:
+    http = MagicMock(spec=httpx.Client)
+    client = RaziApiClient(
+        base_url="https://api.example.com",
+        username="u",
+        password="p",
+        mfa_code="1234",
+        _http_client=http,
+    )
+    client.close()
+    http.close.assert_not_called()
 
-    from account_details_update.http_api.errors import MfaVerificationError
 
-    client, _ = _make_client()
-    token_response = TokenResponse(mfa_required=True, mfa_token="tok", message="ok")
+def test_context_manager_closes_owned_http_client() -> None:
+    mock_http = MagicMock(spec=httpx.Client)
+    with patch(
+        "account_details_update.http_api.razi_api_client.httpx.Client",
+        return_value=mock_http,
+    ):
+        client = RaziApiClient(
+            base_url="https://api.example.com",
+            username="u",
+            password="p",
+            mfa_code="1234",
+        )
+    client.close()
+    mock_http.close.assert_called_once()
 
-    side_effects: list[str | MfaVerificationError] = [
-        MfaVerificationError("routing miss")
-    ] * failures
-    if should_succeed:
-        side_effects.append("bearer_ok")
 
-    mock_verify = MagicMock(side_effect=side_effects)
+# ── _raise_for_status edge cases ──────────────────────────────────────────────
 
-    with patch.object(client, "request_token", return_value=token_response):
-        with patch.object(client, "verify_mfa", mock_verify):
-            if should_succeed:
-                bearer = client.authenticate(_max_retries=max_retries)
-                assert bearer == "bearer_ok"
-                assert mock_verify.call_count == failures + 1
-            else:
-                with pytest.raises(MfaVerificationError):
-                    client.authenticate(_max_retries=max_retries)
-                assert mock_verify.call_count == max_retries
+
+def test_raise_for_status_handles_non_dict_json_body() -> None:
+    client, _ = _make_client(
+        post_response=httpx.Response(500, json=["error", "list"])
+    )
+    with pytest.raises(ServerError):
+        client.request_token()
+
+
+# ── non-retryable errors ──────────────────────────────────────────────────────
 
 
 def test_authentication_error_is_not_retried() -> None:
@@ -399,7 +406,7 @@ def test_validation_error_is_not_retried() -> None:
     )
     banking = BankingDetails(routing_number="123456789", account_number="1234567890")
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ApiValidationError):
         client.update_banking("bearer", banking)
 
     assert http.put.call_count == 1

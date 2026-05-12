@@ -4,16 +4,16 @@ __all__ = [
     "RaziApiError",
     "AuthenticationError",
     "MfaVerificationError",
-    "ValidationError",
+    "ApiValidationError",
     "RateLimitError",
     "ServerError",
 ]
 
 from .errors import (
+    ApiValidationError,
     AuthenticationError,
     MfaVerificationError,
     RateLimitError,
     RaziApiError,
     ServerError,
-    ValidationError,
 )

@@ -13,7 +13,7 @@ class MfaVerificationError(RaziApiError):
     """Raised when API MFA verification fails."""
 
 
-class ValidationError(RaziApiError):
+class ApiValidationError(RaziApiError):
     """Raised when the API rejects request validation."""
 
 

@@ -16,12 +16,12 @@ from tenacity import (
 
 from ..account_details import BankingDetails, PaymentMethod
 from .errors import (
+    ApiValidationError,
     AuthenticationError,
     MfaVerificationError,
     RateLimitError,
     RaziApiError,
     ServerError,
-    ValidationError,
 )
 from .schemas import (
     BankingUpdateRequest,
@@ -134,7 +134,12 @@ class RaziApiClient:
         return self._retrying(_call)
 
     def verify_mfa(self, token_response: TokenResponse) -> str:
-        """Step 2 of auth. Returns the bearer access token."""
+        """Step 2 of auth. Returns the bearer access token.
+
+        When the native auth path is active, this consumes the token cached by
+        request_token() and makes no HTTP call. A subsequent call without a
+        preceding request_token() falls through to the custom MFA flow.
+        """
 
         def _call() -> str:
             if self._native_access_token is not None:
@@ -201,25 +206,6 @@ class RaziApiClient:
 
         return self._retrying(_call)
 
-    def authenticate(self, *, _max_retries: int = 10) -> str:
-        """Full auth flow: request_token + verify_mfa, with retry for the Supabase
-        Deno instance routing issue (see class docstring).
-
-        This loop is intentionally separate from the per-call tenacity retry.
-        Tenacity handles transient network/server errors (_RETRYABLE); this loop
-        handles MfaVerificationError, which signals a routing miss and requires a
-        fresh token rather than a bare retry. Mixing the two would risk amplification
-        (up to _max_retries × 5 attempts), so they must stay in separate layers.
-        """
-        for attempt in range(_max_retries):
-            token_response = self.request_token()
-            try:
-                return self.verify_mfa(token_response)
-            except MfaVerificationError:
-                if attempt >= _max_retries - 1:
-                    raise
-        raise AssertionError("unreachable")
-
     def _raise_for_status(
         self, response: httpx.Response, *, is_mfa: bool = False
     ) -> None:
@@ -228,15 +214,18 @@ class RaziApiClient:
         status = response.status_code
         try:
             data = response.json()
-            detail = data.get("error") or data.get("message") or response.text
-        except (ValueError, AttributeError):
+            if isinstance(data, dict):
+                detail = data.get("error") or data.get("message") or response.text
+            else:
+                detail = response.text
+        except ValueError:
             detail = response.text
         if status == 401:
             if is_mfa:
                 raise MfaVerificationError(detail)
             raise AuthenticationError(detail)
         if status == 422:
-            raise ValidationError(detail)
+            raise ApiValidationError(detail)
         if status == 429:
             raise RateLimitError(detail)
         if status >= 500:
