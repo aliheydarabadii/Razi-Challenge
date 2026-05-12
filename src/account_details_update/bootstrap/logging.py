@@ -1,4 +1,4 @@
-"""Logging setup placeholder."""
+"""Application logging configuration."""
 
 from __future__ import annotations
 

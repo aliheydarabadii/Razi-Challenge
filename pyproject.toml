@@ -60,6 +60,4 @@ docstring-code-format = true
 python_version = "3.11"
 mypy_path = "src"
 files = ["src"]
-disallow_untyped_defs = true
-warn_return_any = true
-warn_unused_ignores = true
+strict = true
