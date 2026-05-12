@@ -90,11 +90,25 @@ def test_invalid_cvc_length() -> None:
 
 
 def test_past_expiry_year() -> None:
-    with pytest.raises(ValueError, match="expiry_year must be current or future"):
+    with pytest.raises(ValueError, match="card has already expired"):
         PaymentMethod(
             cardholder_name="Test Candidate",
             card_number="4242424242424242",
             expiry_month="12",
             expiry_year=str(date.today().year - 1),
+            cvc="123",
+        )
+
+
+def test_card_expired_earlier_this_year_is_rejected() -> None:
+    today = date.today()
+    if today.month == 1:
+        pytest.skip("no elapsed months in January to test against")
+    with pytest.raises(ValueError, match="card has already expired"):
+        PaymentMethod(
+            cardholder_name="Test Candidate",
+            card_number="4242424242424242",
+            expiry_month=str(today.month - 1),
+            expiry_year=str(today.year),
             cvc="123",
         )
