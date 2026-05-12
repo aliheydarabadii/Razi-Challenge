@@ -329,21 +329,18 @@ def test_request_token_raises_after_exhausting_retries() -> None:
 # ── authenticate ─────────────────────────────────────────────────────────────
 
 
-def test_authenticate_returns_bearer_token_on_first_attempt() -> None:
-    from unittest.mock import patch
-
-    client, _ = _make_client()
-    token_response = TokenResponse(mfa_required=True, mfa_token="mfa_abc", message="ok")
-
-    with patch.object(client, "request_token", return_value=token_response):
-        with patch.object(client, "verify_mfa", return_value="bearer_xyz") as mock_mfa:
-            bearer = client.authenticate()
-
-    mock_mfa.assert_called_once_with(token_response)
-    assert bearer == "bearer_xyz"
-
-
-def test_authenticate_retries_on_mfa_verification_error() -> None:
+@pytest.mark.parametrize(
+    "failures, max_retries, should_succeed",
+    [
+        (0, 3, True),  # no routing miss — success immediately
+        (1, 3, True),  # one miss — success mid-run
+        (2, 3, True),  # boundary: max_retries-1 misses — success on last attempt
+        (3, 3, False),  # all attempts exhausted — raises
+    ],
+)
+def test_authenticate_retry_behaviour(
+    failures: int, max_retries: int, should_succeed: bool
+) -> None:
     from unittest.mock import MagicMock, patch
 
     from account_details_update.http_api.errors import MfaVerificationError
@@ -351,55 +348,24 @@ def test_authenticate_retries_on_mfa_verification_error() -> None:
     client, _ = _make_client()
     token_response = TokenResponse(mfa_required=True, mfa_token="tok", message="ok")
 
-    mock_verify = MagicMock(
-        side_effect=[
-            MfaVerificationError("routing miss"),
-            MfaVerificationError("routing miss"),
-            "bearer_xyz",
-        ]
-    )
+    side_effects: list[str | MfaVerificationError] = [
+        MfaVerificationError("routing miss")
+    ] * failures
+    if should_succeed:
+        side_effects.append("bearer_ok")
+
+    mock_verify = MagicMock(side_effect=side_effects)
+
     with patch.object(client, "request_token", return_value=token_response):
         with patch.object(client, "verify_mfa", mock_verify):
-            bearer = client.authenticate()
-
-    assert mock_verify.call_count == 3
-    assert bearer == "bearer_xyz"
-
-
-def test_authenticate_succeeds_on_final_attempt() -> None:
-    from unittest.mock import MagicMock, patch
-
-    from account_details_update.http_api.errors import MfaVerificationError
-
-    client, _ = _make_client()
-    token_response = TokenResponse(mfa_required=True, mfa_token="tok", message="ok")
-    _max_retries = 4
-
-    mock_verify = MagicMock(
-        side_effect=[MfaVerificationError("miss")] * (_max_retries - 1) + ["bearer_final"]
-    )
-    with patch.object(client, "request_token", return_value=token_response):
-        with patch.object(client, "verify_mfa", mock_verify):
-            bearer = client.authenticate(_max_retries=_max_retries)
-
-    assert mock_verify.call_count == _max_retries
-    assert bearer == "bearer_final"
-
-
-def test_authenticate_raises_after_exhausting_retries() -> None:
-    from unittest.mock import patch
-
-    from account_details_update.http_api.errors import MfaVerificationError
-
-    client, _ = _make_client()
-    token_response = TokenResponse(mfa_required=True, mfa_token="tok", message="ok")
-
-    with patch.object(client, "request_token", return_value=token_response):
-        with patch.object(
-            client, "verify_mfa", side_effect=MfaVerificationError("always fails")
-        ):
-            with pytest.raises(MfaVerificationError):
-                client.authenticate(_max_retries=3)
+            if should_succeed:
+                bearer = client.authenticate(_max_retries=max_retries)
+                assert bearer == "bearer_ok"
+                assert mock_verify.call_count == failures + 1
+            else:
+                with pytest.raises(MfaVerificationError):
+                    client.authenticate(_max_retries=max_retries)
+                assert mock_verify.call_count == max_retries
 
 
 def test_authentication_error_is_not_retried() -> None:
