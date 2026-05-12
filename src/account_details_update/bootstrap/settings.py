@@ -37,7 +37,7 @@ class Settings(BaseSettings):
         alias="SUPABASE_URL",
     )
     supabase_anon_key: str = Field(
-        default="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2eWh1Zm53Y2xoY3ZtZ3RxeHdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MTg0ODYsImV4cCI6MjA4Njk5NDQ4Nn0.2RhFpJZLSLtLvLqzWWnPha64jEoWFexTq2u4zfUGIXg",
+        default="",
         alias="SUPABASE_ANON_KEY",
     )
 
