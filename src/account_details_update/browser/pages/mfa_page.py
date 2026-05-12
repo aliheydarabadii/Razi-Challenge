@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from .. import selectors
-from ._helpers import require_page, wait_for_page_idle
+from .page_ready import require_page, wait_for_page_idle
 
 
 class MfaPage:

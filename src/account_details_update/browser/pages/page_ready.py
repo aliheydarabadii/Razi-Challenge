@@ -1,4 +1,4 @@
-"""Helpers shared by Playwright page objects."""
+"""Page-readiness guards and synchronisation primitives."""
 
 from __future__ import annotations
 

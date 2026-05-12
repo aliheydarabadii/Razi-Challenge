@@ -8,7 +8,7 @@ from ...banking_details import BankingDetails
 from ...payment_method import PaymentMethod
 from ...ports import AccountUpdateResult
 from .. import selectors
-from ._helpers import require_page, wait_for_page_idle
+from .page_ready import require_page, wait_for_page_idle
 
 
 class AccountPage:

@@ -11,10 +11,10 @@ from ..banking_details import BankingDetails
 from ..payment_method import PaymentMethod
 from ..ports import AccountUpdateResult
 from .errors import BrowserPageError
-from .pages._helpers import require_page
 from .pages.account_page import AccountPage
 from .pages.login_page import LoginPage
 from .pages.mfa_page import MfaPage
+from .pages.page_ready import require_page
 
 DEFAULT_LOGIN_PATH = "/login"
 DEFAULT_ACCOUNT_PATH = "/app/account"
