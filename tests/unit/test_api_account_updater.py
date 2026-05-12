@@ -15,7 +15,7 @@ from tests.support.fake_data import fake_banking_details, fake_payment_method
 
 class FakeRaziApiClient:
     def __init__(self, *, mfa_fails_times: int = 0) -> None:
-        self.calls: list[str] = []
+        self.calls: list[str | tuple[str, str]] = []
         self._mfa_fails_remaining = mfa_fails_times
 
     def request_token(self) -> TokenResponse:

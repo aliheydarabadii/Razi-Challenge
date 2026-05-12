@@ -45,7 +45,7 @@ def _make_client(
 def test_request_token_posts_credentials_and_returns_token_response() -> None:
     response = httpx.Response(
         200,
-        json={"mfa_required": True, "mfa_token": "mfa_abc123", "message": "MFA required"},
+        json={"mfa_required": True, "mfa_token": "mfa_abc123", "message": "ok"},
     )
     client, http = _make_client(post_response=response)
 
@@ -80,7 +80,9 @@ def test_request_token_raises_rate_limit_error_on_429() -> None:
 # ── native auth path ─────────────────────────────────────────────────────────
 
 def test_request_token_uses_native_supabase_auth_when_anon_key_set() -> None:
-    response = httpx.Response(200, json={"access_token": "native_jwt", "token_type": "Bearer"})
+    response = httpx.Response(
+        200, json={"access_token": "native_jwt", "token_type": "Bearer"}
+    )
     client, http = _make_client(
         post_response=response,
         anon_key="anon_key_value",
@@ -98,7 +100,9 @@ def test_request_token_uses_native_supabase_auth_when_anon_key_set() -> None:
 
 
 def test_verify_mfa_returns_cached_native_token_without_http_call() -> None:
-    response = httpx.Response(200, json={"access_token": "native_jwt", "token_type": "Bearer"})
+    response = httpx.Response(
+        200, json={"access_token": "native_jwt", "token_type": "Bearer"}
+    )
     client, http = _make_client(
         post_response=response,
         anon_key="anon_key_value",
@@ -155,7 +159,11 @@ def test_verify_mfa_raises_mfa_error_on_401() -> None:
 def test_update_banking_puts_with_bearer_and_returns_masked_confirmation() -> None:
     response = httpx.Response(
         200,
-        json={"routing_masked": "•••••6789", "account_masked": "••••••7890", "token": "btok_x"},
+        json={
+            "routing_masked": "•••••6789",
+            "account_masked": "••••••7890",
+            "token": "btok_x",
+        },
     )
     client, http = _make_client(put_response=response)
     banking = BankingDetails(routing_number="123456789", account_number="1234567890")

@@ -6,6 +6,7 @@ import argparse
 import sys
 
 from .account_details import BankingDetails, PaymentMethod
+from .browser.pages._helpers import BrowserPageError
 from .browser.playwright_account_updater import PlaywrightAccountUpdater
 from .config import Settings, load_settings
 from .http_api.api_account_updater import ApiAccountUpdater
@@ -55,27 +56,34 @@ def main(argv: list[str] | None = None) -> int:
     settings = load_settings()
 
     if args.command == "browser":
-        banking_details, payment_method = _build_domain_objects(settings)
-        with PlaywrightAccountUpdater(
-            base_url=settings.challenge_base_url,
-            username=settings.username,
-            password=settings.password,
-            mfa_code=settings.mfa_code,
-            headed=settings.headed,
-            slow_mo_ms=settings.slow_mo_ms,
-        ) as updater:
-            use_case = UpdateAccountDetails(account_update_port=updater)
-            result = use_case.execute(
-                banking_details=banking_details,
-                payment_method=payment_method,
-            )
+        try:
+            banking_details, payment_method = _build_domain_objects(settings)
+            with PlaywrightAccountUpdater(
+                base_url=settings.challenge_base_url,
+                username=settings.username,
+                password=settings.password,
+                mfa_code=settings.mfa_code,
+                headed=settings.headed,
+                slow_mo_ms=settings.slow_mo_ms,
+            ) as updater:
+                use_case = UpdateAccountDetails(account_update_port=updater)
+                result = use_case.execute(
+                    banking_details=banking_details,
+                    payment_method=payment_method,
+                )
+        except ValueError as exc:
+            print(f"Configuration error: {exc}", file=sys.stderr)
+            return 1
+        except BrowserPageError as exc:
+            print(f"Browser error: {exc}", file=sys.stderr)
+            return 1
         print(result.banking_summary)
         print(result.payment_summary)
         return 0
 
     if args.command == "api":
-        banking_details, payment_method = _build_domain_objects(settings)
         try:
+            banking_details, payment_method = _build_domain_objects(settings)
             with RaziApiClient(
                 base_url=settings.api_base_url,
                 username=settings.username,
@@ -90,6 +98,9 @@ def main(argv: list[str] | None = None) -> int:
                     banking_details=banking_details,
                     payment_method=payment_method,
                 )
+        except ValueError as exc:
+            print(f"Configuration error: {exc}", file=sys.stderr)
+            return 1
         except RaziApiError as exc:
             print(f"API error: {exc}", file=sys.stderr)
             return 1

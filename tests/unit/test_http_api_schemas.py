@@ -34,7 +34,9 @@ def test_mfa_verify_request_construction() -> None:
 
 
 def test_banking_update_request_construction() -> None:
-    request = BankingUpdateRequest(routing_number="123456789", account_number="1234567890")
+    request = BankingUpdateRequest(
+        routing_number="123456789", account_number="1234567890"
+    )
 
     assert request.routing_number == "123456789"
     assert request.account_number == "1234567890"
