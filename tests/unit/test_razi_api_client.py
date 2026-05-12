@@ -253,6 +253,7 @@ def test_update_payment_puts_with_bearer_and_returns_masked_confirmation() -> No
 
 # ── retry behaviour ───────────────────────────────────────────────────────────
 
+
 def test_request_token_retries_on_rate_limit_then_succeeds() -> None:
     http = MagicMock(spec=httpx.Client)
     http.post.side_effect = [
