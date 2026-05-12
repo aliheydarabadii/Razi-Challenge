@@ -2,37 +2,33 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict
 
 
-@dataclass(frozen=True, slots=True)
-class TokenRequest:
+class ApiSchema(BaseModel):
+    """Base model for API request and response placeholders."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+
+class TokenRequest(ApiSchema):
     username: str
     password: str
 
 
-@dataclass(frozen=True, slots=True)
-class MfaVerifyRequest:
+class MfaVerifyRequest(ApiSchema):
     token: str
     code: str
 
 
-@dataclass(frozen=True, slots=True)
-class BankingUpdateRequest:
+class BankingUpdateRequest(ApiSchema):
     routing_number: str
     account_number: str
 
 
-@dataclass(frozen=True, slots=True)
-class PaymentUpdateRequest:
+class PaymentUpdateRequest(ApiSchema):
     cardholder_name: str
     card_number: str
     expiry_month: str
     expiry_year: str
     cvc: str
-
-
-@dataclass(frozen=True, slots=True)
-class MaskedConfirmation:
-    banking_summary: str
-    payment_summary: str

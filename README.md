@@ -46,6 +46,8 @@ razi-engineering-challenge/
       http_api/
       support/
   tests/
+    support/
+      fake_data.py
     unit/
     integration/
 ```

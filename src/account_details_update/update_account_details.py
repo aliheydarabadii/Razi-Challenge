@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from account_details_update.account_details import BankingDetails, PaymentMethod
-from account_details_update.account_update_result import AccountUpdateResult
-from account_details_update.ports import AccountUpdatePort
+from .account_details import BankingDetails, PaymentMethod
+from .account_update_result import AccountUpdateResult
+from .ports import AccountUpdatePort
 
 
 class UpdateAccountDetails:

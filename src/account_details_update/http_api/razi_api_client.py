@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from account_details_update.account_details import BankingDetails, PaymentMethod
+from ..account_details import BankingDetails, PaymentMethod
 
 
 class RaziApiClient:
@@ -26,7 +26,7 @@ class RaziApiClient:
         # TODO: Request an initial auth token from the API.
         raise NotImplementedError("API token request is not implemented yet.")
 
-    def verify_mfa(self, token_response: object | dict[str, Any]) -> str:
+    def verify_mfa(self, token_response: dict[str, Any]) -> str:
         # TODO: Exchange the token response and MFA code for a bearer token.
         raise NotImplementedError("API MFA verification is not implemented yet.")
 

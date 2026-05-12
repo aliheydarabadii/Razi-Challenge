@@ -1,4 +1,4 @@
-"""Fake sandbox data for tests and local scaffold demos."""
+"""Fake sandbox data for tests."""
 
 from __future__ import annotations
 

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from account_details_update.account_details import BankingDetails, PaymentMethod
-from account_details_update.account_update_result import AccountUpdateResult
+from .account_details import BankingDetails, PaymentMethod
+from .account_update_result import AccountUpdateResult
 
 
 class AccountUpdatePort(Protocol):

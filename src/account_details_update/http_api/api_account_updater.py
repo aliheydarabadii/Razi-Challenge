@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from account_details_update.account_details import BankingDetails, PaymentMethod
-from account_details_update.account_update_result import AccountUpdateResult
-from account_details_update.http_api.razi_api_client import RaziApiClient
+from ..account_details import BankingDetails, PaymentMethod
+from ..account_update_result import AccountUpdateResult
+from .razi_api_client import RaziApiClient
 
 
 class ApiAccountUpdater:
@@ -14,7 +14,7 @@ class ApiAccountUpdater:
 
     def __init__(self, client: RaziApiClient) -> None:
         self.client = client
-        self.token_response: dict[str, Any] | object | None = None
+        self.token_response: dict[str, Any] | None = None
         self.bearer_token: str | None = None
         self.banking_confirmation: dict[str, Any] | None = None
         self.payment_confirmation: dict[str, Any] | None = None

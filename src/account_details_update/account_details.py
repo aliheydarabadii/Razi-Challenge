@@ -39,6 +39,8 @@ class PaymentMethod:
             raise ValueError("cardholder_name is required")
         if not self.card_number.isdigit():
             raise ValueError("card_number must contain only digits")
+        if not 13 <= len(self.card_number) <= 19:
+            raise ValueError("card_number must be 13 to 19 digits")
         if not self.cvc.isdigit() or len(self.cvc) not in {3, 4}:
             raise ValueError("cvc must be 3 or 4 digits")
         if not self.expiry_month.isdigit():
@@ -49,4 +51,4 @@ class PaymentMethod:
         if not self.expiry_year.isdigit() or len(self.expiry_year) != 4:
             raise ValueError("expiry_year must be a 4 digit year")
         if int(self.expiry_year) < date.today().year:
-            raise ValueError("expiry_year must be a current or future test year")
+            raise ValueError("expiry_year must be current or future")

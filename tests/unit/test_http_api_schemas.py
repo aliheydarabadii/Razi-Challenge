@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from account_details_update.http_api.schemas import (
     BankingUpdateRequest,
-    MaskedConfirmation,
     MfaVerifyRequest,
     PaymentUpdateRequest,
     TokenRequest,
@@ -17,6 +16,10 @@ def test_token_request_construction() -> None:
 
     assert request.username == "candidate@dev-challenge.com"
     assert request.password == "Password123!"
+    assert request.model_dump() == {
+        "username": "candidate@dev-challenge.com",
+        "password": "Password123!",
+    }
 
 
 def test_mfa_verify_request_construction() -> None:
@@ -47,13 +50,3 @@ def test_payment_update_request_construction() -> None:
 
     assert request.cardholder_name == "Test Candidate"
     assert request.card_number == "4242424242424242"
-
-
-def test_masked_confirmation_construction() -> None:
-    confirmation = MaskedConfirmation(
-        banking_summary="Bank account ending in 7890 updated",
-        payment_summary="Card ending in 4242 updated",
-    )
-
-    assert confirmation.banking_summary == "Bank account ending in 7890 updated"
-    assert confirmation.payment_summary == "Card ending in 4242 updated"

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 import pytest
 
 from account_details_update.account_details import BankingDetails, PaymentMethod
@@ -65,6 +67,17 @@ def test_invalid_card_number_non_digit() -> None:
         )
 
 
+def test_invalid_card_number_length() -> None:
+    with pytest.raises(ValueError, match="card_number must be 13 to 19 digits"):
+        PaymentMethod(
+            cardholder_name="Test Candidate",
+            card_number="424242424242",
+            expiry_month="12",
+            expiry_year="2030",
+            cvc="123",
+        )
+
+
 def test_invalid_cvc_length() -> None:
     with pytest.raises(ValueError, match="cvc must be 3 or 4 digits"):
         PaymentMethod(
@@ -73,4 +86,15 @@ def test_invalid_cvc_length() -> None:
             expiry_month="12",
             expiry_year="2030",
             cvc="12",
+        )
+
+
+def test_past_expiry_year() -> None:
+    with pytest.raises(ValueError, match="expiry_year must be current or future"):
+        PaymentMethod(
+            cardholder_name="Test Candidate",
+            card_number="4242424242424242",
+            expiry_month="12",
+            expiry_year=str(date.today().year - 1),
+            cvc="123",
         )
