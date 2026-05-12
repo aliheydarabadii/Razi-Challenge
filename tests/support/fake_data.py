@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import date
+
 from account_details_update import BankingDetails, PaymentMethod
 
 
@@ -17,6 +19,6 @@ def fake_payment_method() -> PaymentMethod:
         cardholder_name="Test Candidate",
         card_number="4242424242424242",
         expiry_month="12",
-        expiry_year="2030",
+        expiry_year=str(date.today().year + 5),
         cvc="123",
     )

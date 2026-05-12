@@ -8,6 +8,8 @@ from account_details_update.browser.pages.mfa_page import MfaPage
 from tests.support.browser_fakes import FakePage
 from tests.support.fake_data import fake_banking_details, fake_payment_method
 
+_PAYMENT = fake_payment_method()
+
 
 def test_login_page_opens_and_submits_credentials() -> None:
     page = FakePage()
@@ -67,11 +69,11 @@ def test_account_page_updates_details_and_returns_scraped_confirmation() -> None
         ("fill", selectors.BANK_ACCOUNT_INPUT, "1234567890"),
         ("click", selectors.BANK_SAVE_BUTTON),
         ("wait_for_load_state", "networkidle"),
-        ("fill", selectors.CARDHOLDER_NAME_INPUT, "Test Candidate"),
-        ("fill", selectors.CARD_NUMBER_INPUT, "4242424242424242"),
-        ("fill", selectors.CARD_EXPIRY_MONTH_INPUT, "12"),
-        ("fill", selectors.CARD_EXPIRY_YEAR_INPUT, "2030"),
-        ("fill", selectors.CARD_CVC_INPUT, "123"),
+        ("fill", selectors.CARDHOLDER_NAME_INPUT, _PAYMENT.cardholder_name),
+        ("fill", selectors.CARD_NUMBER_INPUT, _PAYMENT.card_number),
+        ("fill", selectors.CARD_EXPIRY_MONTH_INPUT, _PAYMENT.expiry_month),
+        ("fill", selectors.CARD_EXPIRY_YEAR_INPUT, _PAYMENT.expiry_year),
+        ("fill", selectors.CARD_CVC_INPUT, _PAYMENT.cvc),
         ("click", selectors.CARD_SAVE_BUTTON),
         ("wait_for_load_state", "networkidle"),
         ("text_content", selectors.BANK_CONFIRMATION),
