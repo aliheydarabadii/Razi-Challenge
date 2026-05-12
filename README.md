@@ -14,8 +14,6 @@ account_details_update/
   update_account_details.py ← use case — orchestrates login, MFA, updates, verify
   account_details.py        ← BankingDetails, PaymentMethod value objects (validated)
   account_update_result.py  ← AccountUpdateResult value object
-  config.py                 ← pydantic-settings Settings (env / .env file)
-  cli.py                    ← entrypoint — `browser` and `api` subcommands
   browser/
     playwright_account_updater.py  ← AccountUpdatePort adapter (Playwright)
     pages/                         ← LoginPage, MfaPage, AccountPage objects
@@ -25,8 +23,10 @@ account_details_update/
     api_account_updater.py  ← AccountUpdatePort adapter (REST API)
     schemas.py              ← Pydantic request / response models
     errors.py               ← typed API exception hierarchy
-  support/
-    logging.py
+  bootstrap/
+    cli.py                  ← entrypoint — `browser` and `api` subcommands
+    settings.py             ← pydantic-settings Settings (env / .env file)
+    logging.py              ← logging setup
 tests/
   support/
     fake_data.py            ← BankingDetails / PaymentMethod test factories
@@ -57,6 +57,25 @@ pytest
 ```
 
 All 48 tests run offline with no real browser or network calls.
+
+## Docker
+
+The project ships with two build targets. Secrets are always passed at
+runtime via `--env-file` — never baked into the image.
+
+**API adapter — lightweight, no browser (~250 MB)**
+
+```bash
+docker build --target api -t account-updater:api .
+docker run --env-file .env account-updater:api
+```
+
+**Browser adapter — includes Playwright + Chromium**
+
+```bash
+docker build --target browser -t account-updater:browser .
+docker run --env-file .env account-updater:browser
+```
 
 ## Part 1 — Browser Automation
 
