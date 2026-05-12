@@ -6,6 +6,7 @@ __all__ = [
     "MfaVerificationError",
     "ValidationError",
     "RateLimitError",
+    "ServerError",
 ]
 
 from .errors import (
@@ -13,5 +14,6 @@ from .errors import (
     MfaVerificationError,
     RateLimitError,
     RaziApiError,
+    ServerError,
     ValidationError,
 )

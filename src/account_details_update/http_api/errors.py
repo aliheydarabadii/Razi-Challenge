@@ -19,3 +19,7 @@ class ValidationError(RaziApiError):
 
 class RateLimitError(RaziApiError):
     """Raised when the API rate limit is exceeded."""
+
+
+class ServerError(RaziApiError):
+    """Raised on 5xx responses — transient, eligible for retry."""

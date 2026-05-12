@@ -2,7 +2,16 @@
 
 from __future__ import annotations
 
+import logging
+
 import httpx
+from tenacity import (
+    Retrying,
+    before_sleep_log,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from ..account_details import BankingDetails, PaymentMethod
 from .errors import (
@@ -10,6 +19,7 @@ from .errors import (
     MfaVerificationError,
     RateLimitError,
     RaziApiError,
+    ServerError,
     ValidationError,
 )
 from .schemas import (
@@ -23,6 +33,23 @@ from .schemas import (
     TokenResponse,
 )
 
+_logger = logging.getLogger(__name__)
+
+# Errors that are transient and worth retrying.
+# AuthenticationError, MfaVerificationError, and ValidationError are not
+# retried — they indicate a caller problem that won't resolve on its own.
+_RETRYABLE = (RateLimitError, ServerError, httpx.TransportError)
+
+
+def _default_retrying() -> Retrying:
+    return Retrying(
+        retry=retry_if_exception_type(_RETRYABLE),
+        wait=wait_exponential(multiplier=1, min=1, max=30),
+        stop=stop_after_attempt(5),
+        reraise=True,
+        before_sleep=before_sleep_log(_logger, logging.WARNING),
+    )
+
 
 class RaziApiClient:
     """HTTP client for the Razi REST API.
@@ -32,6 +59,10 @@ class RaziApiClient:
     balancer routes the two requests to different instances, verify_mfa always
     fails. When supabase_url and anon_key are supplied the client transparently
     uses the Supabase native auth endpoint instead, which works correctly.
+
+    Retry behaviour: RateLimitError (429), ServerError (5xx), and network-level
+    httpx.TransportError are retried with exponential backoff up to 5 attempts.
+    Authentication and validation errors are not retried.
     """
 
     def __init__(
@@ -43,6 +74,7 @@ class RaziApiClient:
         anon_key: str = "",
         supabase_url: str = "",
         _http_client: httpx.Client | None = None,
+        _retrying: Retrying | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self._username = username
@@ -53,6 +85,7 @@ class RaziApiClient:
         self._owns_http = _http_client is None
         self._http = _http_client or httpx.Client()
         self._native_access_token: str | None = None
+        self._retrying = _retrying if _retrying is not None else _default_retrying()
 
     def close(self) -> None:
         """Close the underlying HTTP client if it was created by this instance."""
@@ -72,47 +105,53 @@ class RaziApiClient:
 
     def request_token(self) -> TokenResponse:
         """Step 1 of auth. Uses native Supabase auth when anon_key is set."""
-        if self._supabase_url and self._anon_key:
-            # Native Supabase auth: single request, no Deno instance routing issue.
+
+        def _call() -> TokenResponse:
+            if self._supabase_url and self._anon_key:
+                # Native Supabase auth: single request, no Deno instance routing issue.
+                response = self._http.post(
+                    f"{self._supabase_url}/auth/v1/token?grant_type=password",
+                    json={"email": self._username, "password": self._password},
+                    headers={"apikey": self._anon_key},
+                )
+                self._raise_for_status(response)
+                self._native_access_token = response.json()["access_token"]
+                return TokenResponse(
+                    mfa_required=False,
+                    mfa_token="",
+                    message="Authenticated via Supabase native auth.",
+                )
+            # Custom auth flow (broken on this deployment — see class docstring).
+            payload = TokenRequest(email=self._username, password=self._password)
             response = self._http.post(
-                f"{self._supabase_url}/auth/v1/token?grant_type=password",
-                json={"email": self._username, "password": self._password},
-                headers={"apikey": self._anon_key},
+                f"{self.base_url}/auth/token",
+                json=payload.model_dump(),
             )
             self._raise_for_status(response)
-            self._native_access_token = response.json()["access_token"]
-            return TokenResponse(
-                mfa_required=False,
-                mfa_token="",
-                message="Authenticated via Supabase native auth.",
-            )
+            return TokenResponse.model_validate(response.json())
 
-        # Custom auth flow (broken on this deployment — see class docstring).
-        payload = TokenRequest(email=self._username, password=self._password)
-        response = self._http.post(
-            f"{self.base_url}/auth/token",
-            json=payload.model_dump(),
-        )
-        self._raise_for_status(response)
-        return TokenResponse.model_validate(response.json())
+        return self._retrying(_call)
 
     def verify_mfa(self, token_response: TokenResponse) -> str:
         """Step 2 of auth. Returns the bearer access token."""
-        if self._native_access_token is not None:
-            token = self._native_access_token
-            self._native_access_token = None
-            return token
 
-        payload = MfaVerifyRequest(
-            mfa_token=token_response.mfa_token,
-            code=self._mfa_code,
-        )
-        response = self._http.post(
-            f"{self.base_url}/auth/mfa/verify",
-            json=payload.model_dump(),
-        )
-        self._raise_for_status(response, is_mfa=True)
-        return MfaVerifyResponse.model_validate(response.json()).access_token
+        def _call() -> str:
+            if self._native_access_token is not None:
+                token = self._native_access_token
+                self._native_access_token = None
+                return token
+            payload = MfaVerifyRequest(
+                mfa_token=token_response.mfa_token,
+                code=self._mfa_code,
+            )
+            response = self._http.post(
+                f"{self.base_url}/auth/mfa/verify",
+                json=payload.model_dump(),
+            )
+            self._raise_for_status(response, is_mfa=True)
+            return MfaVerifyResponse.model_validate(response.json()).access_token
+
+        return self._retrying(_call)
 
     def update_banking(
         self,
@@ -120,17 +159,21 @@ class RaziApiClient:
         banking_details: BankingDetails,
     ) -> BankingUpdateResponse:
         """PUT /account/banking — returns masked confirmation."""
-        payload = BankingUpdateRequest(
-            routing_number=banking_details.routing_number,
-            account_number=banking_details.account_number,
-        )
-        response = self._http.put(
-            f"{self.base_url}/account/banking",
-            json=payload.model_dump(),
-            headers={"Authorization": f"Bearer {bearer_token}"},
-        )
-        self._raise_for_status(response)
-        return BankingUpdateResponse.model_validate(response.json())
+
+        def _call() -> BankingUpdateResponse:
+            payload = BankingUpdateRequest(
+                routing_number=banking_details.routing_number,
+                account_number=banking_details.account_number,
+            )
+            response = self._http.put(
+                f"{self.base_url}/account/banking",
+                json=payload.model_dump(),
+                headers={"Authorization": f"Bearer {bearer_token}"},
+            )
+            self._raise_for_status(response)
+            return BankingUpdateResponse.model_validate(response.json())
+
+        return self._retrying(_call)
 
     def update_payment(
         self,
@@ -138,20 +181,24 @@ class RaziApiClient:
         payment_method: PaymentMethod,
     ) -> PaymentUpdateResponse:
         """PUT /account/payment — returns masked card confirmation."""
-        payload = PaymentUpdateRequest(
-            cardholder_name=payment_method.cardholder_name,
-            card_number=payment_method.card_number,
-            exp_month=int(payment_method.expiry_month),
-            exp_year=int(payment_method.expiry_year),
-            cvc=payment_method.cvc,
-        )
-        response = self._http.put(
-            f"{self.base_url}/account/payment",
-            json=payload.model_dump(),
-            headers={"Authorization": f"Bearer {bearer_token}"},
-        )
-        self._raise_for_status(response)
-        return PaymentUpdateResponse.model_validate(response.json())
+
+        def _call() -> PaymentUpdateResponse:
+            payload = PaymentUpdateRequest(
+                cardholder_name=payment_method.cardholder_name,
+                card_number=payment_method.card_number,
+                exp_month=int(payment_method.expiry_month),
+                exp_year=int(payment_method.expiry_year),
+                cvc=payment_method.cvc,
+            )
+            response = self._http.put(
+                f"{self.base_url}/account/payment",
+                json=payload.model_dump(),
+                headers={"Authorization": f"Bearer {bearer_token}"},
+            )
+            self._raise_for_status(response)
+            return PaymentUpdateResponse.model_validate(response.json())
+
+        return self._retrying(_call)
 
     def _raise_for_status(
         self, response: httpx.Response, *, is_mfa: bool = False
@@ -172,4 +219,6 @@ class RaziApiClient:
             raise ValidationError(detail)
         if status == 429:
             raise RateLimitError(detail)
+        if status >= 500:
+            raise ServerError(f"HTTP {status}: {detail}")
         raise RaziApiError(f"HTTP {status}: {detail}")
