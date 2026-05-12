@@ -37,11 +37,17 @@ tests/
 
 ## Setup
 
+The project uses [uv](https://docs.astral.sh/uv/) for dependency management.
+
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-playwright install chromium   # required for Part 1 only
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install all dependencies (creates .venv automatically)
+uv sync --extra dev
+
+# Install Playwright browsers — required for Part 1 only
+uv run playwright install chromium
 ```
 
 Copy `.env.example` to `.env`. The defaults are sandbox values — do not use real banking or card data.
@@ -53,7 +59,7 @@ cp .env.example .env
 ## Run Tests
 
 ```bash
-pytest
+uv run python -m pytest tests/
 ```
 
 All 48 tests run offline with no real browser or network calls.
@@ -82,9 +88,9 @@ docker run --env-file .env account-updater:browser
 Uses Playwright to sign in, complete MFA, submit banking and payment details on `/app/account`, then return a confirmation.
 
 ```bash
-account-details-update browser
+uv run account-details-update browser
 # or headed with slow motion for observation:
-HEADED=true SLOW_MO_MS=500 account-details-update browser
+HEADED=true SLOW_MO_MS=500 uv run account-details-update browser
 ```
 
 **Flow:**
@@ -107,7 +113,7 @@ Payment method updated successfully.
 Uses `httpx` to authenticate and update account details via the REST API.
 
 ```bash
-account-details-update api
+uv run account-details-update api
 ```
 
 **Documented auth flow (POST /auth/token → POST /auth/mfa/verify):**
