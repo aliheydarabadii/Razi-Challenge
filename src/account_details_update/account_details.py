@@ -6,6 +6,18 @@ from dataclasses import dataclass
 from datetime import date
 
 
+def _luhn_valid(number: str) -> bool:
+    total = 0
+    for i, ch in enumerate(reversed(number)):
+        digit = int(ch)
+        if i % 2 == 1:
+            digit *= 2
+            if digit > 9:
+                digit -= 9
+        total += digit
+    return total % 10 == 0
+
+
 @dataclass(frozen=True, slots=True)
 class BankingDetails:
     """Banking details required to update an account."""
@@ -41,6 +53,8 @@ class PaymentMethod:
             raise ValueError("card_number must contain only digits")
         if not 13 <= len(self.card_number) <= 19:
             raise ValueError("card_number must be 13 to 19 digits")
+        if not _luhn_valid(self.card_number):
+            raise ValueError("card_number failed Luhn check")
         if not self.cvc.isdigit() or len(self.cvc) not in {3, 4}:
             raise ValueError("cvc must be 3 or 4 digits")
         if not self.expiry_month.isdigit():

@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     cardholder_name: str = Field(default="Test Candidate", alias="CARDHOLDER_NAME")
     card_number: str = Field(default="4242424242424242", alias="CARD_NUMBER")
     card_expiry_month: str = Field(default="12", alias="CARD_EXPIRY_MONTH")
-    card_expiry_year: str = Field(default="2030", alias="CARD_EXPIRY_YEAR")
+    card_expiry_year: str = Field(default="2035", alias="CARD_EXPIRY_YEAR")
     card_cvc: str = Field(default="123", alias="CARD_CVC")
 
 

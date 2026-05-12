@@ -89,6 +89,17 @@ def test_invalid_cvc_length() -> None:
         )
 
 
+def test_luhn_invalid_card_rejected() -> None:
+    with pytest.raises(ValueError, match="Luhn"):
+        PaymentMethod(
+            cardholder_name="Test Candidate",
+            card_number="4242424242424241",  # last digit off by one
+            expiry_month="12",
+            expiry_year="2030",
+            cvc="123",
+        )
+
+
 def test_past_expiry_year() -> None:
     with pytest.raises(ValueError, match="card has already expired"):
         PaymentMethod(
