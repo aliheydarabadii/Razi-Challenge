@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from ..account_update_result import AccountUpdateResult
 from ..banking_details import BankingDetails
 from ..payment_method import PaymentMethod
+from ..ports import AccountUpdateResult
 from .errors import MfaVerificationError, RaziApiError
 from .razi_api_client import RaziApiClient
 from .schemas import BankingUpdateResponse, PaymentUpdateResponse

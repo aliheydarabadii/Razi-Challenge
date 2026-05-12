@@ -1,12 +1,20 @@
-"""Ports used by the account details update use case."""
+"""Port and result type for the account-update use case."""
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
-from .account_update_result import AccountUpdateResult
 from .banking_details import BankingDetails
 from .payment_method import PaymentMethod
+
+
+@dataclass(frozen=True, slots=True)
+class AccountUpdateResult:
+    """Masked confirmation summaries returned after a successful update."""
+
+    banking_summary: str
+    payment_summary: str
 
 
 @runtime_checkable

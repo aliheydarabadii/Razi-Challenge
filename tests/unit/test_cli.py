@@ -5,7 +5,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from pydantic import SecretStr
 
-from account_details_update.account_update_result import AccountUpdateResult
 from account_details_update.bootstrap.cli import (
     _build_domain_objects,
     build_parser,
@@ -13,6 +12,7 @@ from account_details_update.bootstrap.cli import (
 )
 from account_details_update.bootstrap.settings import Settings
 from account_details_update.http_api.errors import RaziApiError
+from account_details_update.ports import AccountUpdateResult
 
 _MOCK_RESULT = AccountUpdateResult(
     banking_summary="Routing •••••6789 — Account ••••••7890",

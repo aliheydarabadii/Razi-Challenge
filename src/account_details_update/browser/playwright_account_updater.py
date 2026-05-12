@@ -6,9 +6,9 @@ from collections.abc import Callable
 from types import TracebackType
 from typing import Any
 
-from ..account_update_result import AccountUpdateResult
 from ..banking_details import BankingDetails
 from ..payment_method import PaymentMethod
+from ..ports import AccountUpdateResult
 from .pages._helpers import BrowserPageError, require_page
 from .pages.account_page import AccountPage
 from .pages.login_page import LoginPage

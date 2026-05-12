@@ -8,8 +8,7 @@ __all__ = [
     "UpdateAccountDetails",
 ]
 
-from .account_update_result import AccountUpdateResult
 from .banking_details import BankingDetails
 from .payment_method import PaymentMethod
-from .ports import AccountUpdatePort
+from .ports import AccountUpdatePort, AccountUpdateResult
 from .update_account_details import UpdateAccountDetails
