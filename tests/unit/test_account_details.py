@@ -4,7 +4,8 @@ from datetime import date
 
 import pytest
 
-from account_details_update import BankingDetails, PaymentMethod
+from account_details_update.banking_details import BankingDetails
+from account_details_update.payment_method import PaymentMethod
 
 
 def test_valid_banking_details() -> None:

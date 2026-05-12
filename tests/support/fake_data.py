@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from datetime import date
 
-from account_details_update import BankingDetails, PaymentMethod
+from account_details_update.banking_details import BankingDetails
+from account_details_update.payment_method import PaymentMethod
 
 
 def fake_banking_details() -> BankingDetails:

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from account_details_update import AccountUpdateResult
 from account_details_update.browser import selectors
 from account_details_update.browser.pages.account_page import AccountPage
 from account_details_update.browser.pages.login_page import LoginPage
 from account_details_update.browser.pages.mfa_page import MfaPage
+from account_details_update.ports import AccountUpdateResult
 from tests.support.browser_fakes import FakePage
 from tests.support.fake_data import fake_banking_details, fake_payment_method
 

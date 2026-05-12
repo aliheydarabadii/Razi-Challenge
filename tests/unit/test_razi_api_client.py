@@ -6,7 +6,7 @@ import httpx
 import pytest
 from tenacity import Retrying, retry_if_exception_type, stop_after_attempt, wait_none
 
-from account_details_update import BankingDetails, PaymentMethod
+from account_details_update.banking_details import BankingDetails
 from account_details_update.http_api import (
     ApiValidationError,
     AuthenticationError,
@@ -16,6 +16,7 @@ from account_details_update.http_api import (
 from account_details_update.http_api.errors import ServerError
 from account_details_update.http_api.razi_api_client import _RETRYABLE, RaziApiClient
 from account_details_update.http_api.schemas import TokenResponse
+from account_details_update.payment_method import PaymentMethod
 
 # Fast retrying used by all existing tests — no wait, single attempt.
 # This keeps tests instant while still exercising the retry code path.

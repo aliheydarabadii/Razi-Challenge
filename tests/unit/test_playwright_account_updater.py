@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from account_details_update import AccountUpdatePort, AccountUpdateResult
 from account_details_update.browser import BrowserPageError, selectors
 from account_details_update.browser.playwright_account_updater import (
     PlaywrightAccountUpdater,
 )
+from account_details_update.ports import AccountUpdatePort, AccountUpdateResult
 from tests.support.browser_fakes import FakePage
 from tests.support.fake_data import fake_banking_details, fake_payment_method
 

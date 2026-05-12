@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from account_details_update import (
-    AccountUpdateResult,
-    BankingDetails,
-    PaymentMethod,
-    UpdateAccountDetails,
-)
+from account_details_update.banking_details import BankingDetails
+from account_details_update.payment_method import PaymentMethod
+from account_details_update.ports import AccountUpdateResult
+from account_details_update.update_account_details import UpdateAccountDetails
 
 
 class FakeAccountUpdatePort:

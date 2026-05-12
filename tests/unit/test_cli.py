@@ -76,7 +76,8 @@ def test_build_parser_accepts_api_subcommand() -> None:
 
 
 def test_build_domain_objects_returns_correct_types() -> None:
-    from account_details_update import BankingDetails, PaymentMethod
+    from account_details_update.banking_details import BankingDetails
+    from account_details_update.payment_method import PaymentMethod
 
     banking, payment = _build_domain_objects(_test_settings())
 

@@ -15,13 +15,13 @@ from __future__ import annotations
 
 import pytest
 
-from account_details_update import UpdateAccountDetails
 from account_details_update.banking_details import BankingDetails
 from account_details_update.bootstrap.settings import Settings
 from account_details_update.browser.playwright_account_updater import (
     PlaywrightAccountUpdater,
 )
 from account_details_update.payment_method import PaymentMethod
+from account_details_update.update_account_details import UpdateAccountDetails
 
 
 @pytest.fixture(scope="module")

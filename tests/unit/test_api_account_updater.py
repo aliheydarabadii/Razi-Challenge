@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from account_details_update import AccountUpdatePort, BankingDetails, PaymentMethod
+from account_details_update.banking_details import BankingDetails
 from account_details_update.http_api.api_account_updater import (
     _MFA_ROUTING_RETRIES,
     ApiAccountUpdater,
@@ -15,6 +15,8 @@ from account_details_update.http_api.schemas import (
     PaymentUpdateResponse,
     TokenResponse,
 )
+from account_details_update.payment_method import PaymentMethod
+from account_details_update.ports import AccountUpdatePort
 from tests.support.fake_data import fake_banking_details, fake_payment_method
 
 
