@@ -1,4 +1,4 @@
-"""Runtime configuration for future browser and API adapters."""
+"""Runtime configuration for the browser and API adapters."""
 
 from __future__ import annotations
 

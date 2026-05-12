@@ -28,7 +28,7 @@ dev = [
 ]
 
 [project.scripts]
-account-details-update = "account_details_update.cli:main"
+account-details-update = "account_details_update.interfaces.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
