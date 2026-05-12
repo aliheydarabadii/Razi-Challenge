@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from ..account_details import BankingDetails, PaymentMethod
 from ..account_update_result import AccountUpdateResult
-from .errors import MfaVerificationError, RaziApiError
+from .errors import RaziApiError
 from .razi_api_client import RaziApiClient
-from .schemas import BankingUpdateResponse, PaymentUpdateResponse, TokenResponse
+from .schemas import BankingUpdateResponse, PaymentUpdateResponse
 
 
 class ApiAccountUpdater:
@@ -14,29 +14,18 @@ class ApiAccountUpdater:
 
     def __init__(self, client: RaziApiClient) -> None:
         self.client = client
-        self._token_response: TokenResponse | None = None
+        self._login_called = False
         self._bearer_token: str | None = None
         self._banking_confirmation: BankingUpdateResponse | None = None
         self._payment_confirmation: PaymentUpdateResponse | None = None
 
     def login(self) -> None:
-        self._token_response = self.client.request_token()
+        self._login_called = True
 
     def complete_mfa(self, *, _max_retries: int = 10) -> None:
-        if self._token_response is None:
+        if not self._login_called:
             raise RaziApiError("login() must be called before complete_mfa().")
-        # The API runs on Supabase Edge Functions. MFA tokens are stored in-memory
-        # per Deno instance, so verify_mfa can land on a different instance than
-        # request_token and see no record of the token. Re-requesting the token
-        # and retrying until both calls hit the same instance resolves this.
-        for attempt in range(_max_retries):
-            try:
-                self._bearer_token = self.client.verify_mfa(self._token_response)
-                return
-            except MfaVerificationError:
-                if attempt >= _max_retries - 1:
-                    raise
-                self._token_response = self.client.request_token()
+        self._bearer_token = self.client.authenticate(_max_retries=_max_retries)
 
     def update_banking_details(self, banking_details: BankingDetails) -> None:
         if self._bearer_token is None:

@@ -326,6 +326,62 @@ def test_request_token_raises_after_exhausting_retries() -> None:
     assert http.post.call_count == 5
 
 
+# ── authenticate ─────────────────────────────────────────────────────────────
+
+
+def test_authenticate_returns_bearer_token_on_first_attempt() -> None:
+    from unittest.mock import patch
+
+    client, _ = _make_client()
+    token_response = TokenResponse(mfa_required=True, mfa_token="mfa_abc", message="ok")
+
+    with patch.object(client, "request_token", return_value=token_response):
+        with patch.object(client, "verify_mfa", return_value="bearer_xyz") as mock_mfa:
+            bearer = client.authenticate()
+
+    mock_mfa.assert_called_once_with(token_response)
+    assert bearer == "bearer_xyz"
+
+
+def test_authenticate_retries_on_mfa_verification_error() -> None:
+    from unittest.mock import MagicMock, patch
+
+    from account_details_update.http_api.errors import MfaVerificationError
+
+    client, _ = _make_client()
+    token_response = TokenResponse(mfa_required=True, mfa_token="tok", message="ok")
+
+    mock_verify = MagicMock(
+        side_effect=[
+            MfaVerificationError("routing miss"),
+            MfaVerificationError("routing miss"),
+            "bearer_xyz",
+        ]
+    )
+    with patch.object(client, "request_token", return_value=token_response):
+        with patch.object(client, "verify_mfa", mock_verify):
+            bearer = client.authenticate()
+
+    assert mock_verify.call_count == 3
+    assert bearer == "bearer_xyz"
+
+
+def test_authenticate_raises_after_exhausting_retries() -> None:
+    from unittest.mock import patch
+
+    from account_details_update.http_api.errors import MfaVerificationError
+
+    client, _ = _make_client()
+    token_response = TokenResponse(mfa_required=True, mfa_token="tok", message="ok")
+
+    with patch.object(client, "request_token", return_value=token_response):
+        with patch.object(
+            client, "verify_mfa", side_effect=MfaVerificationError("always fails")
+        ):
+            with pytest.raises(MfaVerificationError):
+                client.authenticate(_max_retries=3)
+
+
 def test_authentication_error_is_not_retried() -> None:
     http = MagicMock(spec=httpx.Client)
     http.post.return_value = httpx.Response(401, json={"error": "Invalid credentials"})

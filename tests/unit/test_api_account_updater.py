@@ -8,25 +8,19 @@ from account_details_update.http_api.errors import MfaVerificationError, RaziApi
 from account_details_update.http_api.schemas import (
     BankingUpdateResponse,
     PaymentUpdateResponse,
-    TokenResponse,
 )
 from tests.support.fake_data import fake_banking_details, fake_payment_method
 
 
 class FakeRaziApiClient:
-    def __init__(self, *, mfa_fails_times: int = 0) -> None:
+    def __init__(self, *, authenticate_raises: Exception | None = None) -> None:
         self.calls: list[str | tuple[str, str]] = []
-        self._mfa_fails_remaining = mfa_fails_times
+        self._authenticate_raises = authenticate_raises
 
-    def request_token(self) -> TokenResponse:
-        self.calls.append("request_token")
-        return TokenResponse(mfa_required=True, mfa_token="mfa_test", message="ok")
-
-    def verify_mfa(self, token_response: TokenResponse) -> str:
-        self.calls.append("verify_mfa")
-        if self._mfa_fails_remaining > 0:
-            self._mfa_fails_remaining -= 1
-            raise MfaVerificationError("Invalid or expired MFA session")
+    def authenticate(self, *, _max_retries: int = 10) -> str:
+        self.calls.append("authenticate")
+        if self._authenticate_raises is not None:
+            raise self._authenticate_raises
         return "bearer_test"
 
     def update_banking(
@@ -63,8 +57,7 @@ def test_api_account_updater_orchestrates_auth_and_updates_in_order() -> None:
     result = updater.verify_updates()
 
     assert fake_client.calls == [
-        "request_token",
-        "verify_mfa",
+        "authenticate",
         ("update_banking", "bearer_test"),
         ("update_payment", "bearer_test"),
     ]
@@ -78,32 +71,21 @@ def test_api_account_updater_satisfies_account_update_port() -> None:
     assert isinstance(updater, AccountUpdatePort)
 
 
-def test_complete_mfa_retries_when_mfa_session_lands_on_different_instance() -> None:
-    # Simulates the Supabase edge-function routing issue where verify_mfa hits
-    # a different instance than request_token and sees no record of the token.
-    fake_client = FakeRaziApiClient(mfa_fails_times=2)
-    updater = ApiAccountUpdater(client=fake_client)
-
-    updater.login()
-    updater.complete_mfa()
-
-    assert fake_client.calls.count("request_token") == 3  # 1 login + 2 retries
-    assert fake_client.calls.count("verify_mfa") == 3  # 2 failures + 1 success
-
-
-def test_complete_mfa_raises_after_exhausting_retries() -> None:
-    fake_client = FakeRaziApiClient(mfa_fails_times=10)
-    updater = ApiAccountUpdater(client=fake_client)
-
-    updater.login()
-    with pytest.raises(MfaVerificationError):
-        updater.complete_mfa(_max_retries=3)
-
-
 def test_complete_mfa_requires_login_first() -> None:
     updater = ApiAccountUpdater(client=FakeRaziApiClient())
 
     with pytest.raises(RaziApiError, match="login\\(\\) must be called"):
+        updater.complete_mfa()
+
+
+def test_complete_mfa_propagates_authentication_failure() -> None:
+    fake_client = FakeRaziApiClient(
+        authenticate_raises=MfaVerificationError("Invalid or expired MFA session")
+    )
+    updater = ApiAccountUpdater(client=fake_client)
+    updater.login()
+
+    with pytest.raises(MfaVerificationError):
         updater.complete_mfa()
 
 
