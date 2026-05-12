@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Protocol
 
 
 class BrowserPageError(RuntimeError):
     """Raised when a browser page object cannot perform an action."""
+
+
+class _PageWithLoadState(Protocol):
+    def wait_for_load_state(self, state: str) -> None: ...
 
 
 def require_page(page: Any | None) -> Any:
@@ -18,7 +22,5 @@ def require_page(page: Any | None) -> Any:
     return page
 
 
-def wait_for_page_idle(page: Any) -> None:
-    wait_for_load_state = getattr(page, "wait_for_load_state", None)
-    if callable(wait_for_load_state):
-        wait_for_load_state("networkidle")
+def wait_for_page_idle(page: _PageWithLoadState) -> None:
+    page.wait_for_load_state("networkidle")
