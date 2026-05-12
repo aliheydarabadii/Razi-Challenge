@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from ...banking_details import BankingDetails
@@ -11,11 +12,11 @@ from .. import selectors
 from .page_ready import require_page, wait_for_page_idle
 
 
+@dataclass(frozen=True, slots=True)
 class AccountPage:
     """Page object for account update screens."""
 
-    def __init__(self, page: Any | None = None) -> None:
-        self.page = page
+    page: Any | None = None
 
     def open(self, url: str) -> None:
         page = require_page(self.page)

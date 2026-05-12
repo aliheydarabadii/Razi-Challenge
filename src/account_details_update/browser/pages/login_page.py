@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from .. import selectors
 from .page_ready import require_page, wait_for_page_idle
 
 
+@dataclass(frozen=True, slots=True)
 class LoginPage:
     """Page object for the login screen."""
 
-    def __init__(self, page: Any | None = None) -> None:
-        self.page = page
+    page: Any | None = None
 
     def open(self, url: str) -> None:
         page = require_page(self.page)
