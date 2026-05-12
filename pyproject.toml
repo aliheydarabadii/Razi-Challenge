@@ -39,6 +39,9 @@ where = ["src"]
 testpaths = ["tests"]
 pythonpath = ["src", "."]
 addopts = "-ra"
+markers = [
+    "integration: mark test as requiring live external services (guarded by INTEGRATION_TESTS=1)",
+]
 
 [tool.ruff]
 line-length = 88
