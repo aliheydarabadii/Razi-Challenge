@@ -5,9 +5,10 @@ from __future__ import annotations
 from ..banking_details import BankingDetails
 from ..payment_method import PaymentMethod
 from ..ports import AccountUpdateResult
+from .banking import BankingUpdateResponse
 from .errors import MfaVerificationError, RaziApiError
+from .payment import PaymentUpdateResponse
 from .razi_api_client import RaziApiClient
-from .schemas import BankingUpdateResponse, PaymentUpdateResponse
 
 # Number of times to retry the full request_token → verify_mfa cycle when the
 # Supabase load balancer routes the two requests to different Deno instances.

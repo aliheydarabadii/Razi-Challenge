@@ -16,6 +16,13 @@ from tenacity import (
 
 from ..banking_details import BankingDetails
 from ..payment_method import PaymentMethod
+from .authentication import (
+    MfaVerifyRequest,
+    MfaVerifyResponse,
+    TokenRequest,
+    TokenResponse,
+)
+from .banking import BankingUpdateRequest, BankingUpdateResponse
 from .errors import (
     ApiValidationError,
     AuthenticationError,
@@ -24,16 +31,7 @@ from .errors import (
     RaziApiError,
     ServerError,
 )
-from .schemas import (
-    BankingUpdateRequest,
-    BankingUpdateResponse,
-    MfaVerifyRequest,
-    MfaVerifyResponse,
-    PaymentUpdateRequest,
-    PaymentUpdateResponse,
-    TokenRequest,
-    TokenResponse,
-)
+from .payment import PaymentUpdateRequest, PaymentUpdateResponse
 
 _logger = structlog.get_logger()
 
