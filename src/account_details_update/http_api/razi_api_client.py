@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 
 import httpx
+import structlog
 from tenacity import (
     Retrying,
     before_sleep_log,
@@ -33,7 +34,7 @@ from .schemas import (
     TokenResponse,
 )
 
-_logger = logging.getLogger(__name__)
+_logger = structlog.get_logger()
 
 # Errors that are transient and worth retrying.
 # AuthenticationError, MfaVerificationError, and ValidationError are not
