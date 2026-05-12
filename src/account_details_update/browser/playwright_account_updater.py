@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass, field
 from types import TracebackType
 from typing import Any
 
@@ -19,49 +20,50 @@ DEFAULT_LOGIN_PATH = "/login"
 DEFAULT_ACCOUNT_PATH = "/app/account"
 
 
+@dataclass(slots=True)
 class PlaywrightAccountUpdater:
     """Browser adapter that structurally implements AccountUpdatePort."""
 
-    def __init__(
-        self,
-        base_url: str,
-        username: str,
-        password: str,
-        mfa_code: str,
-        page: Any | None = None,
-        *,
-        headed: bool = False,
-        slow_mo_ms: int = 0,
-        login_url: str | None = None,
-        account_url: str | None = None,
-        _playwright_factory: Callable[[], Any] | None = None,
-    ) -> None:
-        self.base_url = base_url.rstrip("/")
-        self.login_url = login_url or _join_url(self.base_url, DEFAULT_LOGIN_PATH)
-        self.account_url = account_url or _join_url(
-            self.base_url,
-            DEFAULT_ACCOUNT_PATH,
-        )
-        self._username = username
-        self._password = password
-        self._mfa_code = mfa_code
-        self.headed = headed
-        self.slow_mo_ms = slow_mo_ms
-        self._playwright_factory = _playwright_factory
-        self.page: Any | None = page
-        self._owns_page = page is None
-        self._playwright: Any | None = None
-        self._browser: Any | None = None
-        self._context: Any | None = None
-        self.login_page: LoginPage
-        self.mfa_page: MfaPage
-        self.account_page: AccountPage
-        self._login_completed = False
-        self._mfa_completed = False
-        self._account_page_opened = False
-        self._banking_updated = False
-        self._payment_updated = False
-        self._bind_page_objects(page)
+    # ── Constructor parameters ────────────────────────────────────────────────
+
+    base_url: str
+    username: str
+    password: str
+    mfa_code: str
+    page: Any | None = None
+    headed: bool = field(default=False, kw_only=True)
+    slow_mo_ms: int = field(default=0, kw_only=True)
+    login_url: str = field(default="", kw_only=True)
+    account_url: str = field(default="", kw_only=True)
+    _playwright_factory: Callable[[], Any] | None = field(
+        default=None, kw_only=True
+    )
+
+    # ── Runtime state (not constructor parameters) ────────────────────────────
+
+    _owns_page: bool = field(default=False, init=False)
+    _playwright: Any | None = field(default=None, init=False)
+    _browser: Any | None = field(default=None, init=False)
+    _context: Any | None = field(default=None, init=False)
+    login_page: LoginPage = field(init=False)
+    mfa_page: MfaPage = field(init=False)
+    account_page: AccountPage = field(init=False)
+    _login_completed: bool = field(default=False, init=False)
+    _mfa_completed: bool = field(default=False, init=False)
+    _account_page_opened: bool = field(default=False, init=False)
+    _banking_updated: bool = field(default=False, init=False)
+    _payment_updated: bool = field(default=False, init=False)
+
+    def __post_init__(self) -> None:
+        self.base_url = self.base_url.rstrip("/")
+        if not self.login_url:
+            self.login_url = _join_url(self.base_url, DEFAULT_LOGIN_PATH)
+        if not self.account_url:
+            self.account_url = _join_url(self.base_url, DEFAULT_ACCOUNT_PATH)
+        self._owns_page = self.page is None
+        self._bind_page_objects(self.page)
+
+    # ── Context manager ───────────────────────────────────────────────────────
 
     def __enter__(self) -> PlaywrightAccountUpdater:
         self._ensure_page()
@@ -75,15 +77,17 @@ class PlaywrightAccountUpdater:
     ) -> None:
         self.close()
 
+    # ── AccountUpdatePort ─────────────────────────────────────────────────────
+
     def login(self) -> None:
         self._ensure_page()
         self.login_page.open(self.login_url)
-        self.login_page.login(self._username, self._password)
+        self.login_page.login(self.username, self.password)
         self._login_completed = True
 
     def complete_mfa(self) -> None:
         self._require_logged_in()
-        self.mfa_page.verify(self._mfa_code)
+        self.mfa_page.verify(self.mfa_code)
         self._mfa_completed = True
 
     def update_banking_details(self, banking_details: BankingDetails) -> None:
@@ -103,13 +107,7 @@ class PlaywrightAccountUpdater:
         return self.account_page.verify_updates()
 
     def close(self) -> None:
-        """Close Playwright resources owned by this adapter.
-
-        State flags are reset so that re-entering the context manager starts a
-        clean session rather than resuming mid-flow. In practice the context
-        manager protocol makes re-use unlikely.
-        """
-
+        """Close Playwright resources and reset state for a clean re-entry."""
         if self._context is not None:
             self._context.close()
             self._context = None
@@ -127,6 +125,8 @@ class PlaywrightAccountUpdater:
         self._account_page_opened = False
         self._banking_updated = False
         self._payment_updated = False
+
+    # ── Private helpers ───────────────────────────────────────────────────────
 
     def _bind_page_objects(self, page: Any | None) -> None:
         self.login_page = LoginPage(page)
