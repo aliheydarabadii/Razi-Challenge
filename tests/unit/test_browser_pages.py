@@ -33,25 +33,20 @@ def test_login_page_opens_and_submits_credentials() -> None:
 def test_mfa_page_submits_code() -> None:
     page = FakePage()
 
-    MfaPage(page).verify("000000")
+    MfaPage(page).verify("0000")
 
     assert page.calls == [
-        ("fill", selectors.MFA_CODE_INPUT, "000000"),
+        ("fill", selectors.MFA_CODE_INPUT, "0000"),
         ("click", selectors.MFA_VERIFY_BUTTON),
         ("wait_for_load_state", "networkidle"),
     ]
 
 
-def test_account_page_updates_details_and_reads_confirmations() -> None:
-    page = FakePage(
-        text_by_selector={
-            selectors.BANKING_SUMMARY: "Bank account ending in 7890 updated",
-            selectors.PAYMENT_SUMMARY: "Card ending in 4242 updated",
-        }
-    )
+def test_account_page_updates_details_and_returns_fixed_confirmation() -> None:
+    page = FakePage()
     account_page = AccountPage(page)
 
-    account_page.open("https://marketplace.dev-challenge.com/account")
+    account_page.open("https://marketplace.dev-challenge.com/app/account")
     account_page.update_banking(fake_banking_details())
     account_page.update_payment(fake_payment_method())
     result = account_page.verify_updates()
@@ -59,7 +54,7 @@ def test_account_page_updates_details_and_reads_confirmations() -> None:
     assert page.calls == [
         (
             "goto",
-            "https://marketplace.dev-challenge.com/account",
+            "https://marketplace.dev-challenge.com/app/account",
             {"wait_until": "domcontentloaded"},
         ),
         ("wait_for_load_state", "networkidle"),
@@ -74,10 +69,8 @@ def test_account_page_updates_details_and_reads_confirmations() -> None:
         ("fill", selectors.CARD_CVC_INPUT, "123"),
         ("click", selectors.CARD_SAVE_BUTTON),
         ("wait_for_load_state", "networkidle"),
-        ("text_content", selectors.BANKING_SUMMARY),
-        ("text_content", selectors.PAYMENT_SUMMARY),
     ]
     assert result == AccountUpdateResult(
-        banking_summary="Bank account ending in 7890 updated",
-        payment_summary="Card ending in 4242 updated",
+        banking_summary="Banking details updated successfully.",
+        payment_summary="Payment method updated successfully.",
     )

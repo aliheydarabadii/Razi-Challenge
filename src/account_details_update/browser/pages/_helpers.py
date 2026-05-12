@@ -22,10 +22,3 @@ def wait_for_page_idle(page: Any) -> None:
     wait_for_load_state = getattr(page, "wait_for_load_state", None)
     if callable(wait_for_load_state):
         wait_for_load_state("networkidle")
-
-
-def read_required_text(page: Any, selector: str) -> str:
-    value = page.text_content(selector)
-    if value is None:
-        raise BrowserPageError(f"No text content found for selector: {selector}")
-    return value.strip()

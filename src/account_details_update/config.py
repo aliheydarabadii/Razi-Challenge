@@ -28,9 +28,17 @@ class Settings(BaseSettings):
         alias="CHALLENGE_USERNAME",
     )
     password: str = Field(default="Password123!", alias="CHALLENGE_PASSWORD")
-    mfa_code: str = Field(default="000000", alias="MFA_CODE")
+    mfa_code: str = Field(default="1234", alias="MFA_CODE")
     headed: bool = Field(default=False, alias="HEADED")
     slow_mo_ms: int = Field(default=0, alias="SLOW_MO_MS")
+
+    bank_routing: str = Field(default="123456789", alias="BANK_ROUTING")
+    bank_account: str = Field(default="1234567890", alias="BANK_ACCOUNT")
+    cardholder_name: str = Field(default="Test Candidate", alias="CARDHOLDER_NAME")
+    card_number: str = Field(default="4242424242424242", alias="CARD_NUMBER")
+    card_expiry_month: str = Field(default="12", alias="CARD_EXPIRY_MONTH")
+    card_expiry_year: str = Field(default="2030", alias="CARD_EXPIRY_YEAR")
+    card_cvc: str = Field(default="123", alias="CARD_CVC")
 
 
 def load_settings() -> Settings:

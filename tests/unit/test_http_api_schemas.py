@@ -26,10 +26,10 @@ def test_token_request_construction() -> None:
 
 
 def test_mfa_verify_request_construction() -> None:
-    request = MfaVerifyRequest(token="temporary-token", code="000000")
+    request = MfaVerifyRequest(token="temporary-token", code="0000")
 
     assert request.token == "temporary-token"
-    assert request.code == "000000"
+    assert request.code == "0000"
 
 
 def test_banking_update_request_construction() -> None:

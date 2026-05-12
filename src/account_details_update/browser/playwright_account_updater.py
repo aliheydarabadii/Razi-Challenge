@@ -14,7 +14,7 @@ from .pages.login_page import LoginPage
 from .pages.mfa_page import MfaPage
 
 DEFAULT_LOGIN_PATH = "/login"
-DEFAULT_ACCOUNT_PATH = "/account"
+DEFAULT_ACCOUNT_PATH = "/app/account"
 
 
 class PlaywrightAccountUpdater:

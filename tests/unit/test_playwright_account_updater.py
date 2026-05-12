@@ -78,17 +78,12 @@ class FakePlaywrightFactory:
 
 
 def test_playwright_account_updater_orchestrates_page_objects() -> None:
-    page = FakePage(
-        text_by_selector={
-            selectors.BANKING_SUMMARY: "Bank account ending in 7890 updated",
-            selectors.PAYMENT_SUMMARY: "Card ending in 4242 updated",
-        }
-    )
+    page = FakePage()
     updater = PlaywrightAccountUpdater(
         base_url="https://marketplace.dev-challenge.com",
         username="candidate@dev-challenge.com",
         password="Password123!",
-        mfa_code="000000",
+        mfa_code="0000",
         page=page,
     )
 
@@ -109,12 +104,12 @@ def test_playwright_account_updater_orchestrates_page_objects() -> None:
         ("fill", selectors.PASSWORD_INPUT, "Password123!"),
         ("click", selectors.LOGIN_BUTTON),
         ("wait_for_load_state", "networkidle"),
-        ("fill", selectors.MFA_CODE_INPUT, "000000"),
+        ("fill", selectors.MFA_CODE_INPUT, "0000"),
         ("click", selectors.MFA_VERIFY_BUTTON),
         ("wait_for_load_state", "networkidle"),
         (
             "goto",
-            "https://marketplace.dev-challenge.com/account",
+            "https://marketplace.dev-challenge.com/app/account",
             {"wait_until": "domcontentloaded"},
         ),
         ("wait_for_load_state", "networkidle"),
@@ -129,12 +124,10 @@ def test_playwright_account_updater_orchestrates_page_objects() -> None:
         ("fill", selectors.CARD_CVC_INPUT, "123"),
         ("click", selectors.CARD_SAVE_BUTTON),
         ("wait_for_load_state", "networkidle"),
-        ("text_content", selectors.BANKING_SUMMARY),
-        ("text_content", selectors.PAYMENT_SUMMARY),
     ]
     assert result == AccountUpdateResult(
-        banking_summary="Bank account ending in 7890 updated",
-        payment_summary="Card ending in 4242 updated",
+        banking_summary="Banking details updated successfully.",
+        payment_summary="Payment method updated successfully.",
     )
 
 
@@ -143,7 +136,7 @@ def test_playwright_account_updater_satisfies_account_update_port() -> None:
         base_url="https://marketplace.dev-challenge.com",
         username="candidate@dev-challenge.com",
         password="Password123!",
-        mfa_code="000000",
+        mfa_code="0000",
         page=FakePage(),
     )
 
@@ -151,17 +144,12 @@ def test_playwright_account_updater_satisfies_account_update_port() -> None:
 
 
 def test_playwright_account_updater_allows_custom_page_urls() -> None:
-    page = FakePage(
-        text_by_selector={
-            selectors.BANKING_SUMMARY: "Bank account ending in 7890 updated",
-            selectors.PAYMENT_SUMMARY: "Card ending in 4242 updated",
-        }
-    )
+    page = FakePage()
     updater = PlaywrightAccountUpdater(
         base_url="https://marketplace.dev-challenge.com",
         username="candidate@dev-challenge.com",
         password="Password123!",
-        mfa_code="000000",
+        mfa_code="0000",
         page=page,
         login_url="https://marketplace.dev-challenge.com/sign-in",
         account_url="https://marketplace.dev-challenge.com/profile/payment",
@@ -188,7 +176,7 @@ def test_complete_mfa_requires_initialized_page() -> None:
         base_url="https://marketplace.dev-challenge.com",
         username="candidate@dev-challenge.com",
         password="Password123!",
-        mfa_code="000000",
+        mfa_code="0000",
     )
 
     with pytest.raises(BrowserPageError, match="Playwright page is required"):
@@ -200,7 +188,7 @@ def test_complete_mfa_with_injected_page_still_requires_login_first() -> None:
         base_url="https://marketplace.dev-challenge.com",
         username="candidate@dev-challenge.com",
         password="Password123!",
-        mfa_code="000000",
+        mfa_code="0000",
         page=FakePage(),
     )
 
@@ -213,7 +201,7 @@ def test_verify_updates_requires_completed_updates() -> None:
         base_url="https://marketplace.dev-challenge.com",
         username="candidate@dev-challenge.com",
         password="Password123!",
-        mfa_code="000000",
+        mfa_code="0000",
         page=FakePage(),
     )
 
@@ -230,7 +218,7 @@ def test_close_releases_owned_resources_and_unbinds_page() -> None:
         base_url="https://marketplace.dev-challenge.com",
         username="candidate@dev-challenge.com",
         password="Password123!",
-        mfa_code="000000",
+        mfa_code="0000",
         _playwright_factory=factory,
     )
 

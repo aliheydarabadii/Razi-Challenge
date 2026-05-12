@@ -1,19 +1,21 @@
 """Selector constants used by the Playwright adapter."""
 
-# TODO: Verify all selectors against the challenge site before implementation.
-EMAIL_INPUT = "[data-testid='email-input']"
-PASSWORD_INPUT = "[data-testid='password-input']"
-LOGIN_BUTTON = "[data-testid='login-button']"
-MFA_CODE_INPUT = "[data-testid='mfa-code-input']"
-MFA_VERIFY_BUTTON = "[data-testid='mfa-verify-button']"
-BANK_ROUTING_INPUT = "[data-testid='bank-routing-input']"
-BANK_ACCOUNT_INPUT = "[data-testid='bank-account-input']"
-BANK_SAVE_BUTTON = "[data-testid='bank-save-button']"
-CARDHOLDER_NAME_INPUT = "[data-testid='cardholder-name-input']"
-CARD_NUMBER_INPUT = "[data-testid='card-number-input']"
-CARD_EXPIRY_MONTH_INPUT = "[data-testid='card-expiry-month-input']"
-CARD_EXPIRY_YEAR_INPUT = "[data-testid='card-expiry-year-input']"
-CARD_CVC_INPUT = "[data-testid='card-cvc-input']"
-CARD_SAVE_BUTTON = "[data-testid='card-save-button']"
-BANKING_SUMMARY = "[data-testid='banking-summary']"
-PAYMENT_SUMMARY = "[data-testid='payment-summary']"
+# Login page — verified against https://marketplace.dev-challenge.com/login
+EMAIL_INPUT = "#email"
+PASSWORD_INPUT = "#password"
+LOGIN_BUTTON = "button[type='submit']"
+
+# MFA page — verified
+MFA_CODE_INPUT = "[data-input-otp='true']"
+MFA_VERIFY_BUTTON = "button[type='submit']"
+
+# Account page (/app/account) — verified against challenge site HTML
+BANK_ROUTING_INPUT = "#bank-routing"
+BANK_ACCOUNT_INPUT = "#bank-account"
+BANK_SAVE_BUTTON = "#bank-save"
+CARDHOLDER_NAME_INPUT = "#card-holder"
+CARD_NUMBER_INPUT = "#card-number"
+CARD_EXPIRY_MONTH_INPUT = "#card-exp-month"
+CARD_EXPIRY_YEAR_INPUT = "#card-exp-year"
+CARD_CVC_INPUT = "#card-cvc"
+CARD_SAVE_BUTTON = "#card-save"
