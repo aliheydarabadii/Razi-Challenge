@@ -1,10 +1,10 @@
-"""Use case for updating account details."""
+"""Use case: update a user's banking details and payment method."""
 
 from __future__ import annotations
 
-from .banking_details import BankingDetails
-from .payment_method import PaymentMethod
-from .ports import AccountUpdatePort, AccountUpdateResult
+from ..banking_details import BankingDetails
+from ..payment_method import PaymentMethod
+from ..ports import AccountUpdatePort, AccountUpdateResult
 
 
 class UpdateAccountDetails:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 
+from ..application.update_account_details import UpdateAccountDetails
 from ..banking_details import BankingDetails
 from ..browser import BrowserPageError
 from ..browser.playwright_account_updater import PlaywrightAccountUpdater
@@ -13,7 +14,6 @@ from ..http_api.api_account_updater import ApiAccountUpdater
 from ..http_api.razi_api_client import RaziApiClient
 from ..payment_method import PaymentMethod
 from ..ports import AccountUpdateResult
-from ..update_account_details import UpdateAccountDetails
 from .logging import configure_logging
 from .settings import Settings, load_settings
 
