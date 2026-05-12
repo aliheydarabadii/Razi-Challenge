@@ -6,6 +6,7 @@ import argparse
 import sys
 
 from ..account_details import BankingDetails, PaymentMethod
+from ..account_update_result import AccountUpdateResult
 from ..browser import BrowserPageError
 from ..browser.playwright_account_updater import PlaywrightAccountUpdater
 from ..http_api import RaziApiError
@@ -49,67 +50,60 @@ def _build_domain_objects(settings: Settings) -> tuple[BankingDetails, PaymentMe
     )
 
 
+def _execute(command: str, settings: Settings) -> AccountUpdateResult:
+    """Build the adapter for *command*, run the use case, return the result."""
+    banking_details, payment_method = _build_domain_objects(settings)
+
+    if command == "browser":
+        with PlaywrightAccountUpdater(
+            base_url=settings.challenge_base_url,
+            username=settings.username,
+            password=settings.password.get_secret_value(),
+            mfa_code=settings.mfa_code.get_secret_value(),
+            headed=settings.headed,
+            slow_mo_ms=settings.slow_mo_ms,
+        ) as updater:
+            return UpdateAccountDetails(account_update_port=updater).execute(
+                banking_details=banking_details,
+                payment_method=payment_method,
+            )
+
+    with RaziApiClient(
+        base_url=settings.api_base_url,
+        username=settings.username,
+        password=settings.password.get_secret_value(),
+        mfa_code=settings.mfa_code.get_secret_value(),
+        anon_key=settings.supabase_anon_key.get_secret_value(),
+        supabase_url=settings.supabase_url,
+    ) as client:
+        return UpdateAccountDetails(
+            account_update_port=ApiAccountUpdater(client=client)
+        ).execute(
+            banking_details=banking_details,
+            payment_method=payment_method,
+        )
+
+
 def main(argv: list[str] | None = None) -> int:
     configure_logging()
-    parser = build_parser()
-    args = parser.parse_args(argv)
+    args = build_parser().parse_args(argv)
     settings = load_settings()
 
-    if args.command == "browser":
-        try:
-            banking_details, payment_method = _build_domain_objects(settings)
-            with PlaywrightAccountUpdater(
-                base_url=settings.challenge_base_url,
-                username=settings.username,
-                password=settings.password.get_secret_value(),
-                mfa_code=settings.mfa_code.get_secret_value(),
-                headed=settings.headed,
-                slow_mo_ms=settings.slow_mo_ms,
-            ) as updater:
-                use_case = UpdateAccountDetails(account_update_port=updater)
-                result = use_case.execute(
-                    banking_details=banking_details,
-                    payment_method=payment_method,
-                )
-        except ValueError as exc:
-            print(f"Configuration error: {exc}", file=sys.stderr)
-            return 1
-        except BrowserPageError as exc:
-            print(f"Browser error: {exc}", file=sys.stderr)
-            return 1
-        print(result.banking_summary)
-        print(result.payment_summary)
-        return 0
+    try:
+        result = _execute(args.command, settings)
+    except ValueError as exc:
+        print(f"Configuration error: {exc}", file=sys.stderr)
+        return 1
+    except BrowserPageError as exc:
+        print(f"Browser error: {exc}", file=sys.stderr)
+        return 1
+    except RaziApiError as exc:
+        print(f"API error: {exc}", file=sys.stderr)
+        return 1
 
-    if args.command == "api":
-        try:
-            banking_details, payment_method = _build_domain_objects(settings)
-            with RaziApiClient(
-                base_url=settings.api_base_url,
-                username=settings.username,
-                password=settings.password.get_secret_value(),
-                mfa_code=settings.mfa_code.get_secret_value(),
-                anon_key=settings.supabase_anon_key.get_secret_value(),
-                supabase_url=settings.supabase_url,
-            ) as client:
-                adapter = ApiAccountUpdater(client=client)
-                use_case = UpdateAccountDetails(account_update_port=adapter)
-                result = use_case.execute(
-                    banking_details=banking_details,
-                    payment_method=payment_method,
-                )
-        except ValueError as exc:
-            print(f"Configuration error: {exc}", file=sys.stderr)
-            return 1
-        except RaziApiError as exc:
-            print(f"API error: {exc}", file=sys.stderr)
-            return 1
-        print(result.banking_summary)
-        print(result.payment_summary)
-        return 0
-
-    parser.error(f"Unsupported command: {args.command}")
-    return 2
+    print(result.banking_summary)
+    print(result.payment_summary)
+    return 0
 
 
 if __name__ == "__main__":
