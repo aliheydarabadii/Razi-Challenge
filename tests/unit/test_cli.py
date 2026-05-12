@@ -128,7 +128,7 @@ def test_main_browser_returns_one_on_configuration_error(capsys) -> None:  # typ
 
 
 def test_main_browser_returns_one_on_browser_page_error(capsys) -> None:  # type: ignore[no-untyped-def]
-    from account_details_update.browser import BrowserPageError
+    from account_details_update.browser.errors import BrowserPageError
 
     with (
         patch(f"{_CLI}.load_settings", return_value=_test_settings()),

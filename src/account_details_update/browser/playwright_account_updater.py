@@ -9,7 +9,8 @@ from typing import Any
 from ..banking_details import BankingDetails
 from ..payment_method import PaymentMethod
 from ..ports import AccountUpdateResult
-from .pages._helpers import BrowserPageError, require_page
+from .errors import BrowserPageError
+from .pages._helpers import require_page
 from .pages.account_page import AccountPage
 from .pages.login_page import LoginPage
 from .pages.mfa_page import MfaPage

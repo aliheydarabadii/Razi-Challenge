@@ -7,7 +7,7 @@ import sys
 
 from ..application.update_account_details import UpdateAccountDetails
 from ..banking_details import BankingDetails
-from ..browser import BrowserPageError
+from ..browser.errors import BrowserPageError
 from ..browser.playwright_account_updater import PlaywrightAccountUpdater
 from ..http_api import RaziApiError
 from ..http_api.api_account_updater import ApiAccountUpdater

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from account_details_update.browser import BrowserPageError, selectors
+from account_details_update.browser import selectors
+from account_details_update.browser.errors import BrowserPageError
 from account_details_update.browser.playwright_account_updater import (
     PlaywrightAccountUpdater,
 )

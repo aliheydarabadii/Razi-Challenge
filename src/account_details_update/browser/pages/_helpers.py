@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
-
-class BrowserPageError(RuntimeError):
-    """Raised when a browser page object cannot perform an action."""
+from ..errors import BrowserPageError
 
 
 class _PageWithLoadState(Protocol):
