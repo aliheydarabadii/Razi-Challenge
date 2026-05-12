@@ -6,8 +6,8 @@ import pytest
 
 from account_details_update import AccountUpdatePort, BankingDetails, PaymentMethod
 from account_details_update.http_api.api_account_updater import (
-    ApiAccountUpdater,
     _MFA_ROUTING_RETRIES,
+    ApiAccountUpdater,
 )
 from account_details_update.http_api.errors import MfaVerificationError, RaziApiError
 from account_details_update.http_api.schemas import (
@@ -124,10 +124,10 @@ def test_verify_updates_requires_both_updates() -> None:
 @pytest.mark.parametrize(
     "failures, should_succeed",
     [
-        (0, True),                          # no routing miss — succeeds immediately
-        (1, True),                          # one miss — succeeds mid-run
-        (_MFA_ROUTING_RETRIES - 1, True),   # boundary: last attempt succeeds
-        (_MFA_ROUTING_RETRIES, False),      # all attempts exhausted — raises
+        (0, True),  # no routing miss — succeeds immediately
+        (1, True),  # one miss — succeeds mid-run
+        (_MFA_ROUTING_RETRIES - 1, True),  # boundary: last attempt succeeds
+        (_MFA_ROUTING_RETRIES, False),  # all attempts exhausted — raises
     ],
 )
 def test_complete_mfa_routing_miss_retry_behaviour(

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
@@ -13,8 +13,6 @@ from account_details_update.http_api import (
     MfaVerificationError,
     RateLimitError,
 )
-from unittest.mock import patch
-
 from account_details_update.http_api.errors import ServerError
 from account_details_update.http_api.razi_api_client import _RETRYABLE, RaziApiClient
 from account_details_update.http_api.schemas import TokenResponse
@@ -365,9 +363,7 @@ def test_context_manager_closes_owned_http_client() -> None:
 
 
 def test_raise_for_status_handles_non_dict_json_body() -> None:
-    client, _ = _make_client(
-        post_response=httpx.Response(500, json=["error", "list"])
-    )
+    client, _ = _make_client(post_response=httpx.Response(500, json=["error", "list"]))
     with pytest.raises(ServerError):
         client.request_token()
 

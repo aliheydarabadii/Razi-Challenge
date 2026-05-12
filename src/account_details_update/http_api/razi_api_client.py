@@ -37,7 +37,7 @@ from .schemas import (
 _logger = structlog.get_logger()
 
 # Errors that are transient and worth retrying.
-# AuthenticationError, MfaVerificationError, and ValidationError are not
+# AuthenticationError, MfaVerificationError, and ApiValidationError are not
 # retried — they indicate a caller problem that won't resolve on its own.
 _RETRYABLE = (RateLimitError, ServerError, httpx.TransportError)
 

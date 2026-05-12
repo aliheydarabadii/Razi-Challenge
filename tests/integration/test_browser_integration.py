@@ -7,7 +7,8 @@ Run with:
     INTEGRATION_TESTS=1 pytest tests/integration/test_browser_integration.py -v
 
 To watch the browser:
-    INTEGRATION_TESTS=1 HEADED=true SLOW_MO_MS=500 pytest tests/integration/test_browser_integration.py -v
+    INTEGRATION_TESTS=1 HEADED=true SLOW_MO_MS=500 \
+        pytest tests/integration/test_browser_integration.py -v
 """
 
 from __future__ import annotations
@@ -60,6 +61,3 @@ def test_full_browser_flow(settings: Settings) -> None:
 
     assert result.banking_summary, "expected a non-empty banking confirmation"
     assert result.payment_summary, "expected a non-empty payment confirmation"
-    # The page summary should reference the values we submitted.
-    assert settings.bank_routing[-4:] in result.banking_summary or result.banking_summary
-    assert settings.card_number[-4:] in result.payment_summary or result.payment_summary

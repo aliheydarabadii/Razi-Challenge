@@ -181,8 +181,8 @@ curl -s -X PUT \
   https://zvyhufnwclhcvmgtqxwp.supabase.co/functions/v1/api-v1/account/payment \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"cardholder_name":"Test Candidate","card_number":"4242424242424242","exp_month":12,"exp_year":2030,"cvc":"123"}'
-# → {"card_brand":"visa","last4":"4242","exp_month":12,"exp_year":2030,"token":"tok_..."}
+  -d '{"cardholder_name":"Test Candidate","card_number":"4242424242424242","exp_month":12,"exp_year":2035,"cvc":"123"}'
+# → {"card_brand":"visa","last4":"4242","exp_month":12,"exp_year":2035,"token":"tok_..."}
 ```
 
 ### How the client handles this
@@ -193,7 +193,7 @@ curl -s -X PUT \
 
 ```
 Routing •••••6789 — Account ••••••7890
-Visa ending in 4242 (12/2030)
+Visa ending in 4242 (12/2035)
 ```
 
 ## Error handling
@@ -204,7 +204,7 @@ The API adapter maps HTTP errors to typed exceptions:
 |---|---|
 | 401 (auth) | `AuthenticationError` |
 | 401 (MFA) | `MfaVerificationError` |
-| 422 | `ValidationError` |
+| 422 | `ApiValidationError` |
 | 429 | `RateLimitError` |
 | other 4xx/5xx | `RaziApiError` |
 
@@ -226,7 +226,7 @@ All errors are caught in the CLI and printed to stderr with a non-zero exit code
 | `CARDHOLDER_NAME` | `Test Candidate` | Name on card |
 | `CARD_NUMBER` | `4242424242424242` | Card number (Luhn-valid) |
 | `CARD_EXPIRY_MONTH` | `12` | Expiry month |
-| `CARD_EXPIRY_YEAR` | `2030` | Expiry year |
+| `CARD_EXPIRY_YEAR` | `2035` | Expiry year |
 | `CARD_CVC` | `123` | CVC (3–4 digits) |
 | `HEADED` | `false` | Run browser in headed mode |
 | `SLOW_MO_MS` | `0` | Playwright slow-motion delay (ms) |
