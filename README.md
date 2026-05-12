@@ -62,7 +62,19 @@ cp .env.example .env
 uv run python -m pytest tests/
 ```
 
-All 48 tests run offline with no real browser or network calls.
+All unit tests run offline with no real browser or network calls.
+
+To run the integration tests against the live sandbox (requires a configured `.env`):
+
+```bash
+INTEGRATION_TESTS=1 uv run python -m pytest tests/integration/ -v
+```
+
+To also run the browser integration test with a visible browser:
+
+```bash
+INTEGRATION_TESTS=1 HEADED=true SLOW_MO_MS=500 uv run python -m pytest tests/integration/test_browser_integration.py -v
+```
 
 ## Docker
 
