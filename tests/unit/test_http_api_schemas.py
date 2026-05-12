@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import pytest
+from pydantic import ValidationError
+
 from account_details_update.http_api.schemas import (
     BankingUpdateRequest,
     MfaVerifyRequest,
@@ -50,3 +53,12 @@ def test_payment_update_request_construction() -> None:
 
     assert request.cardholder_name == "Test Candidate"
     assert request.card_number == "4242424242424242"
+
+
+def test_extra_fields_are_rejected() -> None:
+    with pytest.raises(ValidationError):
+        TokenRequest(
+            username="candidate@dev-challenge.com",
+            password="Password123!",
+            unexpected="field",
+        )

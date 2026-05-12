@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from .account_details import BankingDetails, PaymentMethod
 from .account_update_result import AccountUpdateResult
 
 
+@runtime_checkable
 class AccountUpdatePort(Protocol):
     """Interface required by the core update use case."""
 

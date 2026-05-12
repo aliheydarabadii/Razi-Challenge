@@ -18,9 +18,9 @@ class RaziApiClient:
         mfa_code: str,
     ) -> None:
         self.base_url = base_url
-        self.username = username
-        self.password = password
-        self.mfa_code = mfa_code
+        self._username = username
+        self._password = password
+        self._mfa_code = mfa_code
 
     def request_token(self) -> dict[str, Any]:
         # TODO: Request an initial auth token from the API.

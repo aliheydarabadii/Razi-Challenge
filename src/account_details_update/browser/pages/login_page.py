@@ -14,9 +14,9 @@ class LoginPage:
     def __init__(self, page: Any | None = None) -> None:
         self.page = page
 
-    def open(self, base_url: str) -> None:
+    def open(self, url: str) -> None:
         page = require_page(self.page)
-        page.goto(base_url, wait_until="domcontentloaded")
+        page.goto(url, wait_until="domcontentloaded")
         wait_for_page_idle(page)
 
     def login(self, username: str, password: str) -> None:

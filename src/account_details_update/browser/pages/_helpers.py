@@ -1,4 +1,4 @@
-"""Small helpers shared by Playwright page objects."""
+"""Helpers shared by Playwright page objects."""
 
 from __future__ import annotations
 

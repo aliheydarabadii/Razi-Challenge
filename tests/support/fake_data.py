@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from account_details_update.account_details import BankingDetails, PaymentMethod
+from account_details_update import BankingDetails, PaymentMethod
 
 
 def fake_banking_details() -> BankingDetails:
