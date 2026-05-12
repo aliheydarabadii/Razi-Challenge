@@ -1,1 +1,5 @@
-"""HTTP API adapter package for future REST integration."""
+"""HTTP API adapter package for the Razi REST API."""
+
+__all__ = ["RaziApiError"]
+
+from .errors import RaziApiError
