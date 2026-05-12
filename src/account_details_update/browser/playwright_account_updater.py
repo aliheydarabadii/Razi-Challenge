@@ -101,7 +101,12 @@ class PlaywrightAccountUpdater:
         return self.account_page.verify_updates()
 
     def close(self) -> None:
-        """Close Playwright resources owned by this adapter."""
+        """Close Playwright resources owned by this adapter.
+
+        State flags are reset so that re-entering the context manager starts a
+        clean session rather than resuming mid-flow. In practice the context
+        manager protocol makes re-use unlikely.
+        """
 
         if self._context is not None:
             self._context.close()
