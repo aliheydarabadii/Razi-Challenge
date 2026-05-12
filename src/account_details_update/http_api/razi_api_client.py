@@ -41,6 +41,9 @@ _logger = structlog.get_logger()
 # retried — they indicate a caller problem that won't resolve on its own.
 _RETRYABLE = (RateLimitError, ServerError, httpx.TransportError)
 
+# Seconds before an individual HTTP call is abandoned.
+_DEFAULT_TIMEOUT = 30.0
+
 
 def _default_retrying() -> Retrying:
     return Retrying(
@@ -74,6 +77,7 @@ class RaziApiClient:
         mfa_code: str,
         anon_key: str = "",
         supabase_url: str = "",
+        timeout: float = _DEFAULT_TIMEOUT,
         _http_client: httpx.Client | None = None,
         _retrying: Retrying | None = None,
     ) -> None:
@@ -84,7 +88,7 @@ class RaziApiClient:
         self._anon_key = anon_key
         self._supabase_url = supabase_url.rstrip("/")
         self._owns_http = _http_client is None
-        self._http = _http_client or httpx.Client()
+        self._http = _http_client or httpx.Client(timeout=timeout)
         self._native_access_token: str | None = None
         self._retrying = _retrying if _retrying is not None else _default_retrying()
 
@@ -109,7 +113,7 @@ class RaziApiClient:
 
         def _call() -> TokenResponse:
             if self._supabase_url and self._anon_key:
-                # Native Supabase auth: single request, no Deno instance routing issue.
+                _logger.info("request_token", auth_method="supabase_native")
                 response = self._http.post(
                     f"{self._supabase_url}/auth/v1/token?grant_type=password",
                     json={"email": self._username, "password": self._password},
@@ -117,19 +121,27 @@ class RaziApiClient:
                 )
                 self._raise_for_status(response)
                 self._native_access_token = response.json()["access_token"]
+                _logger.info("token_obtained", auth_method="supabase_native")
                 return TokenResponse(
                     mfa_required=False,
                     mfa_token="",
                     message="Authenticated via Supabase native auth.",
                 )
             # Custom auth flow (broken on this deployment — see class docstring).
+            _logger.info("request_token", auth_method="custom")
             payload = TokenRequest(email=self._username, password=self._password)
             response = self._http.post(
                 f"{self.base_url}/auth/token",
                 json=payload.model_dump(),
             )
             self._raise_for_status(response)
-            return TokenResponse.model_validate(response.json())
+            result = TokenResponse.model_validate(response.json())
+            _logger.info(
+                "token_obtained",
+                auth_method="custom",
+                mfa_required=result.mfa_required,
+            )
+            return result
 
         return self._retrying(_call)
 
@@ -143,9 +155,12 @@ class RaziApiClient:
 
         def _call() -> str:
             if self._native_access_token is not None:
+                _logger.info("verify_mfa", auth_method="supabase_native")
                 token = self._native_access_token
                 self._native_access_token = None
+                _logger.info("mfa_verified", auth_method="supabase_native")
                 return token
+            _logger.info("verify_mfa", auth_method="custom")
             payload = MfaVerifyRequest(
                 mfa_token=token_response.mfa_token,
                 code=self._mfa_code,
@@ -155,7 +170,11 @@ class RaziApiClient:
                 json=payload.model_dump(),
             )
             self._raise_for_status(response, is_mfa=True)
-            return MfaVerifyResponse.model_validate(response.json()).access_token
+            access_token = MfaVerifyResponse.model_validate(
+                response.json()
+            ).access_token
+            _logger.info("mfa_verified", auth_method="custom")
+            return access_token
 
         return self._retrying(_call)
 
@@ -167,6 +186,7 @@ class RaziApiClient:
         """PUT /account/banking — returns masked confirmation."""
 
         def _call() -> BankingUpdateResponse:
+            _logger.info("update_banking")
             payload = BankingUpdateRequest(
                 routing_number=banking_details.routing_number,
                 account_number=banking_details.account_number,
@@ -177,7 +197,13 @@ class RaziApiClient:
                 headers={"Authorization": f"Bearer {bearer_token}"},
             )
             self._raise_for_status(response)
-            return BankingUpdateResponse.model_validate(response.json())
+            result = BankingUpdateResponse.model_validate(response.json())
+            _logger.info(
+                "banking_updated",
+                routing_masked=result.routing_masked,
+                account_masked=result.account_masked,
+            )
+            return result
 
         return self._retrying(_call)
 
@@ -189,6 +215,7 @@ class RaziApiClient:
         """PUT /account/payment — returns masked card confirmation."""
 
         def _call() -> PaymentUpdateResponse:
+            _logger.info("update_payment")
             payload = PaymentUpdateRequest(
                 cardholder_name=payment_method.cardholder_name,
                 card_number=payment_method.card_number,
@@ -202,7 +229,13 @@ class RaziApiClient:
                 headers={"Authorization": f"Bearer {bearer_token}"},
             )
             self._raise_for_status(response)
-            return PaymentUpdateResponse.model_validate(response.json())
+            result = PaymentUpdateResponse.model_validate(response.json())
+            _logger.info(
+                "payment_updated",
+                card_brand=result.card_brand,
+                last4=result.last4,
+            )
+            return result
 
         return self._retrying(_call)
 
