@@ -22,10 +22,10 @@ class ApiAccountUpdater:
     def login(self) -> None:
         self._login_called = True
 
-    def complete_mfa(self, *, _max_retries: int = 10) -> None:
+    def complete_mfa(self) -> None:
         if not self._login_called:
             raise RaziApiError("login() must be called before complete_mfa().")
-        self._bearer_token = self.client.authenticate(_max_retries=_max_retries)
+        self._bearer_token = self.client.authenticate()
 
     def update_banking_details(self, banking_details: BankingDetails) -> None:
         if self._bearer_token is None:
