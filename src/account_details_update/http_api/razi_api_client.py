@@ -14,7 +14,8 @@ from tenacity import (
     wait_exponential,
 )
 
-from ..account_details import BankingDetails, PaymentMethod
+from ..banking_details import BankingDetails
+from ..payment_method import PaymentMethod
 from .errors import (
     ApiValidationError,
     AuthenticationError,

@@ -12,11 +12,12 @@ from __future__ import annotations
 import pytest
 
 from account_details_update import UpdateAccountDetails
-from account_details_update.account_details import BankingDetails, PaymentMethod
+from account_details_update.banking_details import BankingDetails
 from account_details_update.bootstrap.settings import Settings
 from account_details_update.http_api.api_account_updater import ApiAccountUpdater
 from account_details_update.http_api.errors import AuthenticationError
 from account_details_update.http_api.razi_api_client import RaziApiClient
+from account_details_update.payment_method import PaymentMethod
 
 
 @pytest.fixture(scope="module")

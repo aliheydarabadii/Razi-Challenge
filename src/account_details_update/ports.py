@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from .account_details import BankingDetails, PaymentMethod
 from .account_update_result import AccountUpdateResult
+from .banking_details import BankingDetails
+from .payment_method import PaymentMethod
 
 
 @runtime_checkable
