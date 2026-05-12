@@ -14,6 +14,9 @@ COPY pyproject.toml README.md uv.lock ./
 COPY src/ src/
 RUN uv sync --frozen --no-cache --no-dev --system
 
+RUN adduser --disabled-password --gecos "" appuser
+USER appuser
+
 CMD ["account-details-update", "api"]
 
 
@@ -26,6 +29,13 @@ CMD ["account-details-update", "api"]
 # ─────────────────────────────────────────────────────────────────────────────
 FROM api AS browser
 
-RUN playwright install --with-deps chromium
+# Install Playwright browsers to a fixed path so they are readable by appuser.
+# System-level dependencies (apt packages) require root; switch back after.
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
+USER root
+RUN playwright install-deps chromium \
+    && playwright install chromium \
+    && chmod -R o+rX /opt/playwright-browsers
+USER appuser
 
 CMD ["account-details-update", "browser"]
