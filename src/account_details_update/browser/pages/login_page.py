@@ -1,20 +1,27 @@
-"""Login page placeholder for future Playwright automation."""
+"""Login page object for Playwright automation."""
 
 from __future__ import annotations
 
 from typing import Any
 
+from .. import selectors
+from ._helpers import require_page, wait_for_page_idle
+
 
 class LoginPage:
-    """Placeholder page object for the login screen."""
+    """Page object for the login screen."""
 
     def __init__(self, page: Any | None = None) -> None:
         self.page = page
 
     def open(self, base_url: str) -> None:
-        # TODO: Navigate to the verified login URL using Playwright.
-        raise NotImplementedError("Login page navigation is not implemented yet.")
+        page = require_page(self.page)
+        page.goto(base_url, wait_until="domcontentloaded")
+        wait_for_page_idle(page)
 
     def login(self, username: str, password: str) -> None:
-        # TODO: Fill credentials and submit using verified selectors.
-        raise NotImplementedError("Login form submission is not implemented yet.")
+        page = require_page(self.page)
+        page.fill(selectors.EMAIL_INPUT, username)
+        page.fill(selectors.PASSWORD_INPUT, password)
+        page.click(selectors.LOGIN_BUTTON)
+        wait_for_page_idle(page)

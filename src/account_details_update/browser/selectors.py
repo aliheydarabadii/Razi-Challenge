@@ -1,4 +1,4 @@
-"""Placeholder selectors for the future Playwright adapter."""
+"""Selector constants used by the Playwright adapter."""
 
 # TODO: Verify all selectors against the challenge site before implementation.
 EMAIL_INPUT = "[data-testid='email-input']"

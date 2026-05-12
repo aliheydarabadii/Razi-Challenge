@@ -1,1 +1,1 @@
-"""Page object placeholders for future Playwright automation."""
+"""Page objects for Playwright automation."""
