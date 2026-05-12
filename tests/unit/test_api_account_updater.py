@@ -9,10 +9,10 @@ from account_details_update.http_api.api_account_updater import (
     _MFA_ROUTING_RETRIES,
     ApiAccountUpdater,
 )
-from account_details_update.http_api.authentication import TokenResponse
-from account_details_update.http_api.banking import BankingUpdateResponse
 from account_details_update.http_api.errors import MfaVerificationError, RaziApiError
-from account_details_update.http_api.payment import PaymentUpdateResponse
+from account_details_update.http_api.schemas.authentication import TokenResponse
+from account_details_update.http_api.schemas.banking import BankingUpdateResponse
+from account_details_update.http_api.schemas.payment import PaymentUpdateResponse
 from account_details_update.payment_method import PaymentMethod
 from account_details_update.ports import AccountUpdatePort
 from tests.support.fake_data import fake_banking_details, fake_payment_method

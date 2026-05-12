@@ -3,17 +3,17 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from account_details_update.http_api.authentication import (
+from account_details_update.http_api.schemas.authentication import (
     MfaVerifyRequest,
     MfaVerifyResponse,
     TokenRequest,
     TokenResponse,
 )
-from account_details_update.http_api.banking import (
+from account_details_update.http_api.schemas.banking import (
     BankingUpdateRequest,
     BankingUpdateResponse,
 )
-from account_details_update.http_api.payment import (
+from account_details_update.http_api.schemas.payment import (
     PaymentUpdateRequest,
     PaymentUpdateResponse,
 )
