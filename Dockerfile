@@ -6,14 +6,13 @@
 # ─────────────────────────────────────────────────────────────────────────────
 FROM python:3.13-slim AS api
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
 WORKDIR /app
 
-# Copy packaging metadata and source before installing so setuptools can
-# resolve the package. pyproject.toml + README.md are copied separately so
-# this layer is cached as long as dependencies do not change.
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md uv.lock ./
 COPY src/ src/
-RUN pip install --no-cache-dir .
+RUN uv sync --frozen --no-cache --no-dev --system
 
 CMD ["account-details-update", "api"]
 
@@ -27,11 +26,13 @@ CMD ["account-details-update", "api"]
 # ─────────────────────────────────────────────────────────────────────────────
 FROM python:3.13-slim AS browser
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
 WORKDIR /app
 
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md uv.lock ./
 COPY src/ src/
-RUN pip install --no-cache-dir .
+RUN uv sync --frozen --no-cache --no-dev --system
 RUN playwright install --with-deps chromium
 
 CMD ["account-details-update", "browser"]
