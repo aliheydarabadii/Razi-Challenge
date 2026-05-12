@@ -78,7 +78,12 @@ class FakePlaywrightFactory:
 
 
 def test_playwright_account_updater_orchestrates_page_objects() -> None:
-    page = FakePage()
+    page = FakePage(
+        text_by_selector={
+            selectors.BANK_CONFIRMATION: "Banking details updated successfully.",
+            selectors.CARD_CONFIRMATION: "Payment method updated successfully.",
+        }
+    )
     updater = PlaywrightAccountUpdater(
         base_url="https://marketplace.dev-challenge.com",
         username="candidate@dev-challenge.com",
@@ -124,6 +129,8 @@ def test_playwright_account_updater_orchestrates_page_objects() -> None:
         ("fill", selectors.CARD_CVC_INPUT, "123"),
         ("click", selectors.CARD_SAVE_BUTTON),
         ("wait_for_load_state", "networkidle"),
+        ("text_content", selectors.BANK_CONFIRMATION),
+        ("text_content", selectors.CARD_CONFIRMATION),
     ]
     assert result == AccountUpdateResult(
         banking_summary="Banking details updated successfully.",

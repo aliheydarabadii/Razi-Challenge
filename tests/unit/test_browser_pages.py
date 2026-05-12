@@ -42,8 +42,13 @@ def test_mfa_page_submits_code() -> None:
     ]
 
 
-def test_account_page_updates_details_and_returns_fixed_confirmation() -> None:
-    page = FakePage()
+def test_account_page_updates_details_and_returns_scraped_confirmation() -> None:
+    page = FakePage(
+        text_by_selector={
+            selectors.BANK_CONFIRMATION: "Banking details updated successfully.",
+            selectors.CARD_CONFIRMATION: "Payment method updated successfully.",
+        }
+    )
     account_page = AccountPage(page)
 
     account_page.open("https://marketplace.dev-challenge.com/app/account")
@@ -69,6 +74,8 @@ def test_account_page_updates_details_and_returns_fixed_confirmation() -> None:
         ("fill", selectors.CARD_CVC_INPUT, "123"),
         ("click", selectors.CARD_SAVE_BUTTON),
         ("wait_for_load_state", "networkidle"),
+        ("text_content", selectors.BANK_CONFIRMATION),
+        ("text_content", selectors.CARD_CONFIRMATION),
     ]
     assert result == AccountUpdateResult(
         banking_summary="Banking details updated successfully.",

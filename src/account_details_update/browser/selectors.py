@@ -19,3 +19,7 @@ CARD_EXPIRY_MONTH_INPUT = "#card-exp-month"
 CARD_EXPIRY_YEAR_INPUT = "#card-exp-year"
 CARD_CVC_INPUT = "#card-cvc"
 CARD_SAVE_BUTTON = "#card-save"
+
+# Post-save confirmation elements — verified against challenge site HTML
+BANK_CONFIRMATION = "#bank-confirmation"
+CARD_CONFIRMATION = "#card-confirmation"

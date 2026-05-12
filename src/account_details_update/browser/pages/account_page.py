@@ -39,8 +39,10 @@ class AccountPage:
         wait_for_page_idle(page)
 
     def verify_updates(self) -> AccountUpdateResult:
-        require_page(self.page)
+        page = require_page(self.page)
+        banking_summary = page.text_content(selectors.BANK_CONFIRMATION) or ""
+        payment_summary = page.text_content(selectors.CARD_CONFIRMATION) or ""
         return AccountUpdateResult(
-            banking_summary="Banking details updated successfully.",
-            payment_summary="Payment method updated successfully.",
+            banking_summary=banking_summary.strip(),
+            payment_summary=payment_summary.strip(),
         )
