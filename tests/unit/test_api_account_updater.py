@@ -32,8 +32,7 @@ class FakeRaziApiClient:
     def update_banking(
         self, bearer_token: str, banking_details: BankingDetails
     ) -> BankingUpdateResponse:
-        self.calls.append("update_banking")
-        assert bearer_token == "bearer_test"
+        self.calls.append(("update_banking", bearer_token))
         return BankingUpdateResponse(
             routing_masked="•••••6789",
             account_masked="••••••7890",
@@ -43,8 +42,7 @@ class FakeRaziApiClient:
     def update_payment(
         self, bearer_token: str, payment_method: PaymentMethod
     ) -> PaymentUpdateResponse:
-        self.calls.append("update_payment")
-        assert bearer_token == "bearer_test"
+        self.calls.append(("update_payment", bearer_token))
         return PaymentUpdateResponse(
             card_brand="visa",
             last4="4242",
@@ -67,8 +65,8 @@ def test_api_account_updater_orchestrates_auth_and_updates_in_order() -> None:
     assert fake_client.calls == [
         "request_token",
         "verify_mfa",
-        "update_banking",
-        "update_payment",
+        ("update_banking", "bearer_test"),
+        ("update_payment", "bearer_test"),
     ]
     assert result.banking_summary == "Routing •••••6789 — Account ••••••7890"
     assert result.payment_summary == "Visa ending in 4242 (12/2030)"

@@ -61,7 +61,7 @@ def test_request_token_posts_credentials_and_returns_token_response() -> None:
 
 def test_request_token_raises_authentication_error_on_401() -> None:
     client, _ = _make_client(
-        post_response=httpx.Response(401, json={"message": "Invalid credentials"})
+        post_response=httpx.Response(401, json={"error": "Invalid credentials"})
     )
 
     with pytest.raises(AuthenticationError, match="Invalid credentials"):
@@ -70,7 +70,7 @@ def test_request_token_raises_authentication_error_on_401() -> None:
 
 def test_request_token_raises_rate_limit_error_on_429() -> None:
     client, _ = _make_client(
-        post_response=httpx.Response(429, json={"message": "Rate limit exceeded"})
+        post_response=httpx.Response(429, json={"error": "Rate limit exceeded"})
     )
 
     with pytest.raises(RateLimitError):
@@ -140,7 +140,7 @@ def test_verify_mfa_posts_token_and_code_returns_bearer_token() -> None:
 
 def test_verify_mfa_raises_mfa_error_on_401() -> None:
     client, _ = _make_client(
-        post_response=httpx.Response(401, json={"message": "Invalid MFA code"})
+        post_response=httpx.Response(401, json={"error": "Invalid MFA code"})
     )
     token_response = TokenResponse(
         mfa_required=True, mfa_token="mfa_bad", message="ok"
@@ -173,7 +173,7 @@ def test_update_banking_puts_with_bearer_and_returns_masked_confirmation() -> No
 
 def test_update_banking_raises_validation_error_on_422() -> None:
     client, _ = _make_client(
-        put_response=httpx.Response(422, json={"message": "Invalid routing number"})
+        put_response=httpx.Response(422, json={"error": "Invalid routing number"})
     )
     banking = BankingDetails(routing_number="123456789", account_number="1234567890")
 

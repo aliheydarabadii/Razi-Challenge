@@ -50,8 +50,25 @@ class RaziApiClient:
         self._mfa_code = mfa_code
         self._anon_key = anon_key
         self._supabase_url = supabase_url.rstrip("/")
+        self._owns_http = _http_client is None
         self._http = _http_client or httpx.Client()
         self._native_access_token: str | None = None
+
+    def close(self) -> None:
+        """Close the underlying HTTP client if it was created by this instance."""
+        if self._owns_http:
+            self._http.close()
+
+    def __enter__(self) -> RaziApiClient:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: object,
+    ) -> None:
+        self.close()
 
     def request_token(self) -> TokenResponse:
         """Step 1 of auth. Uses native Supabase auth when anon_key is set."""
@@ -143,7 +160,8 @@ class RaziApiClient:
             return
         status = response.status_code
         try:
-            detail = response.json().get("message", response.text)
+            data = response.json()
+            detail = data.get("error") or data.get("message") or response.text
         except Exception:
             detail = response.text
         if status == 401:

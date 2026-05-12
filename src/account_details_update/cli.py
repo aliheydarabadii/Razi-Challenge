@@ -7,7 +7,7 @@ import sys
 
 from .account_details import BankingDetails, PaymentMethod
 from .browser.playwright_account_updater import PlaywrightAccountUpdater
-from .config import load_settings
+from .config import Settings, load_settings
 from .http_api.api_account_updater import ApiAccountUpdater
 from .http_api.errors import RaziApiError
 from .http_api.razi_api_client import RaziApiClient
@@ -32,24 +32,18 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _build_domain_objects(
-    settings: object,
-) -> tuple[BankingDetails, PaymentMethod]:
-    from .config import Settings
-
-    s = settings
-    assert isinstance(s, Settings)
+def _build_domain_objects(settings: Settings) -> tuple[BankingDetails, PaymentMethod]:
     return (
         BankingDetails(
-            routing_number=s.bank_routing,
-            account_number=s.bank_account,
+            routing_number=settings.bank_routing,
+            account_number=settings.bank_account,
         ),
         PaymentMethod(
-            cardholder_name=s.cardholder_name,
-            card_number=s.card_number,
-            expiry_month=s.card_expiry_month,
-            expiry_year=s.card_expiry_year,
-            cvc=s.card_cvc,
+            cardholder_name=settings.cardholder_name,
+            card_number=settings.card_number,
+            expiry_month=settings.card_expiry_month,
+            expiry_year=settings.card_expiry_year,
+            cvc=settings.card_cvc,
         ),
     )
 
@@ -81,21 +75,21 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "api":
         banking_details, payment_method = _build_domain_objects(settings)
-        client = RaziApiClient(
-            base_url=settings.api_base_url,
-            username=settings.username,
-            password=settings.password,
-            mfa_code=settings.mfa_code,
-            anon_key=settings.supabase_anon_key,
-            supabase_url=settings.supabase_url,
-        )
         try:
-            adapter = ApiAccountUpdater(client=client)
-            use_case = UpdateAccountDetails(account_update_port=adapter)
-            result = use_case.execute(
-                banking_details=banking_details,
-                payment_method=payment_method,
-            )
+            with RaziApiClient(
+                base_url=settings.api_base_url,
+                username=settings.username,
+                password=settings.password,
+                mfa_code=settings.mfa_code,
+                anon_key=settings.supabase_anon_key,
+                supabase_url=settings.supabase_url,
+            ) as client:
+                adapter = ApiAccountUpdater(client=client)
+                use_case = UpdateAccountDetails(account_update_port=adapter)
+                result = use_case.execute(
+                    banking_details=banking_details,
+                    payment_method=payment_method,
+                )
         except RaziApiError as exc:
             print(f"API error: {exc}", file=sys.stderr)
             return 1
