@@ -3,6 +3,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pydantic import SecretStr
 
 from account_details_update.account_update_result import AccountUpdateResult
 from account_details_update.bootstrap.cli import (
@@ -26,10 +27,10 @@ def _test_settings(**overrides: object) -> Settings:
         challenge_base_url="https://example.com",
         api_base_url="https://api.example.com",
         username="u@example.com",
-        password="pass",
-        mfa_code="1234",
+        password=SecretStr("pass"),
+        mfa_code=SecretStr("1234"),
         supabase_url="",
-        supabase_anon_key="",
+        supabase_anon_key=SecretStr(""),
         bank_routing="123456789",
         bank_account="1234567890",
         cardholder_name="Test User",

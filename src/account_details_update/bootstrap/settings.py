@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pydantic import Field
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,8 +27,10 @@ class Settings(BaseSettings):
         default="candidate@dev-challenge.com",
         alias="CHALLENGE_USERNAME",
     )
-    password: str = Field(default="Password123!", alias="CHALLENGE_PASSWORD")
-    mfa_code: str = Field(default="1234", alias="MFA_CODE")
+    password: SecretStr = Field(
+        default=SecretStr("Password123!"), alias="CHALLENGE_PASSWORD"
+    )
+    mfa_code: SecretStr = Field(default=SecretStr("1234"), alias="MFA_CODE")
     headed: bool = Field(default=False, alias="HEADED")
     slow_mo_ms: int = Field(default=0, alias="SLOW_MO_MS")
 
@@ -36,8 +38,8 @@ class Settings(BaseSettings):
         default="https://zvyhufnwclhcvmgtqxwp.supabase.co",
         alias="SUPABASE_URL",
     )
-    supabase_anon_key: str = Field(
-        default="",
+    supabase_anon_key: SecretStr = Field(
+        default=SecretStr(""),
         alias="SUPABASE_ANON_KEY",
     )
 
@@ -48,6 +50,13 @@ class Settings(BaseSettings):
     card_expiry_month: str = Field(default="12", alias="CARD_EXPIRY_MONTH")
     card_expiry_year: str = Field(default="2035", alias="CARD_EXPIRY_YEAR")
     card_cvc: str = Field(default="123", alias="CARD_CVC")
+
+    @field_validator("challenge_base_url", "api_base_url", "supabase_url")
+    @classmethod
+    def must_be_http_url(cls, v: str) -> str:
+        if v and not v.lower().startswith(("http://", "https://")):
+            raise ValueError(f"must start with http:// or https://, got: {v!r}")
+        return v
 
 
 def load_settings() -> Settings:
