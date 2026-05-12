@@ -366,6 +366,26 @@ def test_authenticate_retries_on_mfa_verification_error() -> None:
     assert bearer == "bearer_xyz"
 
 
+def test_authenticate_succeeds_on_final_attempt() -> None:
+    from unittest.mock import MagicMock, patch
+
+    from account_details_update.http_api.errors import MfaVerificationError
+
+    client, _ = _make_client()
+    token_response = TokenResponse(mfa_required=True, mfa_token="tok", message="ok")
+    _max_retries = 4
+
+    mock_verify = MagicMock(
+        side_effect=[MfaVerificationError("miss")] * (_max_retries - 1) + ["bearer_final"]
+    )
+    with patch.object(client, "request_token", return_value=token_response):
+        with patch.object(client, "verify_mfa", mock_verify):
+            bearer = client.authenticate(_max_retries=_max_retries)
+
+    assert mock_verify.call_count == _max_retries
+    assert bearer == "bearer_final"
+
+
 def test_authenticate_raises_after_exhausting_retries() -> None:
     from unittest.mock import patch
 
