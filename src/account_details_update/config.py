@@ -32,6 +32,15 @@ class Settings(BaseSettings):
     headed: bool = Field(default=False, alias="HEADED")
     slow_mo_ms: int = Field(default=0, alias="SLOW_MO_MS")
 
+    supabase_url: str = Field(
+        default="https://zvyhufnwclhcvmgtqxwp.supabase.co",
+        alias="SUPABASE_URL",
+    )
+    supabase_anon_key: str = Field(
+        default="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2eWh1Zm53Y2xoY3ZtZ3RxeHdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MTg0ODYsImV4cCI6MjA4Njk5NDQ4Nn0.2RhFpJZLSLtLvLqzWWnPha64jEoWFexTq2u4zfUGIXg",
+        alias="SUPABASE_ANON_KEY",
+    )
+
     bank_routing: str = Field(default="123456789", alias="BANK_ROUTING")
     bank_account: str = Field(default="1234567890", alias="BANK_ACCOUNT")
     cardholder_name: str = Field(default="Test Candidate", alias="CARDHOLDER_NAME")
