@@ -14,14 +14,14 @@ from account_details_update.http_api.errors import (
     RateLimitError,
     ServerError,
 )
-from account_details_update.http_api.razi_api_client import RETRYABLE, RaziApiClient
+from account_details_update.http_api.razi_api_client import RaziApiClient
 from account_details_update.http_api.schemas.authentication import TokenResponse
 from account_details_update.payment_method import PaymentMethod
 
 # Fast retrying used by all existing tests — no wait, single attempt.
 # This keeps tests instant while still exercising the retry code path.
 _NO_RETRY = Retrying(
-    retry=retry_if_exception_type(RETRYABLE),
+    retry=retry_if_exception_type((RateLimitError, ServerError, httpx.TransportError)),
     wait=wait_none(),
     stop=stop_after_attempt(1),
     reraise=True,
@@ -29,7 +29,7 @@ _NO_RETRY = Retrying(
 
 # Fast retrying used by retry-specific tests — no wait, multiple attempts.
 _FAST_RETRY = Retrying(
-    retry=retry_if_exception_type(RETRYABLE),
+    retry=retry_if_exception_type((RateLimitError, ServerError, httpx.TransportError)),
     wait=wait_none(),
     stop=stop_after_attempt(5),
     reraise=True,
