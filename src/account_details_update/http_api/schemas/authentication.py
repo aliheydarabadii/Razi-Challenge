@@ -12,7 +12,6 @@ class TokenRequest(ApiRequest):
 
 class TokenResponse(ApiResponse):
     mfa_token: str
-    message: str
 
 
 class MfaVerifyRequest(ApiRequest):
@@ -22,6 +21,3 @@ class MfaVerifyRequest(ApiRequest):
 
 class MfaVerifyResponse(ApiResponse):
     access_token: str
-    token_type: str
-    expires_in: int
-    refresh_token: str

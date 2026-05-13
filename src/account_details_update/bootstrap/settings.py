@@ -67,6 +67,13 @@ class Settings(BaseSettings):
             raise ValueError(f"must start with http:// or https://, got: {v!r}")
         return v
 
+    @field_validator("card_expiry_month")
+    @classmethod
+    def must_be_valid_month(cls, v: int) -> int:
+        if not 1 <= v <= 12:
+            raise ValueError(f"must be 1–12, got: {v}")
+        return v
+
 
 def load_settings() -> Settings:
     """Load settings from environment variables and optional .env file."""

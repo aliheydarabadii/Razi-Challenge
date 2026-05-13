@@ -43,9 +43,6 @@ _logger = structlog.get_logger()
 # retried — they indicate a caller problem that won't resolve on its own.
 _RETRYABLE = (RateLimitError, ServerError, httpx.TransportError)
 
-# Seconds before an individual HTTP call is abandoned.
-_DEFAULT_TIMEOUT = 30.0
-
 _T = TypeVar("_T")
 
 
@@ -67,7 +64,7 @@ class RaziApiClient:
 
     _: KW_ONLY
 
-    timeout: float = _DEFAULT_TIMEOUT
+    timeout: float = 30.0
     max_retries: int = 5
     retry_max_wait: int = 30
     _http_client: InitVar[httpx.Client | None] = None
