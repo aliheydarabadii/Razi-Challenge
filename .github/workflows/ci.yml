@@ -22,13 +22,13 @@ jobs:
         run: uv sync --frozen --extra dev
 
       - name: ruff check
-        run: uv run ruff check src/ tests/
+        run: uv run --no-sync ruff check src/ tests/
 
       - name: ruff format
-        run: uv run ruff format --check src/ tests/
+        run: uv run --no-sync ruff format --check src/ tests/
 
       - name: mypy
-        run: uv run mypy src/
+        run: uv run --no-sync mypy src/
 
   test:
     name: Test — Python ${{ matrix.python-version }}
@@ -56,4 +56,4 @@ jobs:
         run: uv sync --frozen --extra dev --python ${{ matrix.python-version }}
 
       - name: Unit tests — pytest
-        run: uv run python -m pytest tests/unit/ -v
+        run: uv run --no-sync python -m pytest tests/unit/ -v
