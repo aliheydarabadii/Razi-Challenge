@@ -134,7 +134,7 @@ Payment method saved
 
 ## Part 2 — REST API Client
 
-Uses `httpx` to authenticate and update account details via the REST API.
+Uses `httpx` to authenticate (MFA always required) and update account details via the REST API.
 
 ```bash
 uv run account-details-update api
@@ -145,14 +145,14 @@ uv run account-details-update api
 ```bash
 BASE=https://zvyhufnwclhcvmgtqxwp.supabase.co/functions/v1/api-v1
 
-# Step 1 — authenticate and capture the MFA token
+# Step 1 — POST /auth/token → returns mfa_token
 MFA_TOKEN=$(curl -s -X POST \
   -H "Content-Type: application/json" \
   -d '{"email":"candidate@dev-challenge.com","password":"Password123!"}' \
   $BASE/auth/token \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['mfa_token'])")
 
-# Step 2 — verify MFA and capture the bearer token
+# Step 2 — POST /auth/mfa/verify → returns bearer token
 TOKEN=$(curl -s -X POST \
   -H "Content-Type: application/json" \
   -d "{\"mfa_token\":\"$MFA_TOKEN\",\"code\":\"1234\"}" \

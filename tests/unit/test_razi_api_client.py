@@ -75,7 +75,6 @@ def test_request_token_posts_credentials_and_returns_token_response() -> None:
         json={"email": "candidate@dev-challenge.com", "password": "Password123!"},
     )
     assert token.mfa_token == "mfa_abc123"
-    assert token.mfa_required is True
 
 
 def test_request_token_raises_authentication_error_on_401() -> None:

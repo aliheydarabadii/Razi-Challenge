@@ -119,7 +119,7 @@ class RaziApiClient:
         )
         self._raise_for_status(response)
         result = TokenResponse.model_validate(response.json())
-        _logger.info("token_obtained", mfa_required=result.mfa_required)
+        _logger.info("token_obtained")
         return result
 
     def _post_mfa_verify(self, token_response: TokenResponse) -> str:

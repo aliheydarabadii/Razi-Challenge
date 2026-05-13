@@ -50,7 +50,6 @@ def bearer_token(client: RaziApiClient) -> str:
 
 def test_request_token_succeeds(client: RaziApiClient) -> None:
     token_response = client.request_token()
-    assert token_response.mfa_required is True
     assert token_response.mfa_token
 
 

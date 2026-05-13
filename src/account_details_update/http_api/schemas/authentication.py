@@ -11,7 +11,6 @@ class TokenRequest(ApiRequest):
 
 
 class TokenResponse(ApiResponse):
-    mfa_required: bool
     mfa_token: str
     message: str
 
