@@ -43,23 +43,32 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _execute(command: str, settings: Settings) -> AccountUpdateResult:
-    """Build the adapter for *command*, run the handler, return the result."""
     cmd = UpdateAccountDetailsCommand(
         banking_details=_build_banking_details(settings),
         payment_method=_build_payment_method(settings),
     )
-
     if command == "browser":
-        session = BrowserSession(headed=settings.headed, slow_mo_ms=settings.slow_mo_ms)
-        with PlaywrightAccountUpdater(
-            base_url=settings.challenge_base_url,
-            username=settings.username,
-            password=settings.password.get_secret_value(),
-            mfa_code=settings.mfa_code.get_secret_value(),
-            session=session,
-        ) as updater:
-            return UpdateAccountDetailsHandler(port=updater).handle(cmd)
+        return _run_browser(cmd, settings)
+    return _run_api(cmd, settings)
 
+
+def _run_browser(
+    cmd: UpdateAccountDetailsCommand, settings: Settings
+) -> AccountUpdateResult:
+    session = BrowserSession(headed=settings.headed, slow_mo_ms=settings.slow_mo_ms)
+    with PlaywrightAccountUpdater(
+        base_url=settings.challenge_base_url,
+        username=settings.username,
+        password=settings.password.get_secret_value(),
+        mfa_code=settings.mfa_code.get_secret_value(),
+        session=session,
+    ) as updater:
+        return UpdateAccountDetailsHandler(port=updater).handle(cmd)
+
+
+def _run_api(
+    cmd: UpdateAccountDetailsCommand, settings: Settings
+) -> AccountUpdateResult:
     with RaziApiClient(
         base_url=settings.api_base_url,
         username=settings.username,
@@ -86,10 +95,6 @@ def _build_payment_method(settings: Settings) -> PaymentMethod:
         expiry_year=settings.card_expiry_year,
         cvc=settings.card_cvc,
     )
-
-
-def _build_domain_objects(settings: Settings) -> tuple[BankingDetails, PaymentMethod]:
-    return _build_banking_details(settings), _build_payment_method(settings)
 
 
 def build_parser() -> argparse.ArgumentParser:

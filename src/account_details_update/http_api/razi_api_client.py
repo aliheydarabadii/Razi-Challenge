@@ -182,7 +182,6 @@ class RaziApiClient:
         _logger.info(
             "payment_updated", card_brand=result.card_brand, last4=result.last4
         )
-
         return result
 
     def _raise_for_status(

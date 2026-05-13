@@ -41,7 +41,7 @@ class BrowserSession:
             self._start()
 
     def close(self) -> None:
-        """Release all browser resources owned by this session."""
+        """Close all browser resources and reset session state."""
         if self._context is not None:
             self._context.close()
             self._context = None

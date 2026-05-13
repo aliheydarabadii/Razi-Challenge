@@ -6,7 +6,8 @@ import pytest
 from pydantic import SecretStr
 
 from account_details_update.bootstrap.cli import (
-    _build_domain_objects,
+    _build_banking_details,
+    _build_payment_method,
     build_parser,
     main,
 )
@@ -70,29 +71,35 @@ def test_build_parser_accepts_api_subcommand() -> None:
     assert args.command == "api"
 
 
-# ── _build_domain_objects ─────────────────────────────────────────────────────
+# ── _build_banking_details / _build_payment_method ───────────────────────────
 
 
-def test_build_domain_objects_returns_correct_types() -> None:
+def test_build_banking_details_returns_correct_values() -> None:
     from account_details_update.banking_details import BankingDetails
-    from account_details_update.payment_method import PaymentMethod
 
-    banking, payment = _build_domain_objects(_test_settings())
+    banking = _build_banking_details(_test_settings())
 
     assert isinstance(banking, BankingDetails)
     assert banking.routing_number == "123456789"
+
+
+def test_build_payment_method_returns_correct_values() -> None:
+    from account_details_update.payment_method import PaymentMethod
+
+    payment = _build_payment_method(_test_settings())
+
     assert isinstance(payment, PaymentMethod)
     assert payment.cardholder_name == "Test User"
 
 
-def test_build_domain_objects_raises_on_invalid_routing_number() -> None:
+def test_build_banking_details_raises_on_invalid_routing_number() -> None:
     with pytest.raises(ValueError, match="routing_number"):
-        _build_domain_objects(_test_settings(bank_routing="BAD"))
+        _build_banking_details(_test_settings(bank_routing="BAD"))
 
 
-def test_build_domain_objects_raises_on_invalid_card_number() -> None:
+def test_build_payment_method_raises_on_invalid_card_number() -> None:
     with pytest.raises(ValueError, match="card_number"):
-        _build_domain_objects(_test_settings(card_number="not-digits"))
+        _build_payment_method(_test_settings(card_number="not-digits"))
 
 
 # ── main — browser command ────────────────────────────────────────────────────
