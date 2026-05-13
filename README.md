@@ -128,23 +128,39 @@ Uses `httpx` to authenticate and update account details via the REST API.
 uv run account-details-update api
 ```
 
-**Auth flow (POST /auth/token → POST /auth/mfa/verify):**
+**Full flow:**
 
 ```bash
+BASE=https://zvyhufnwclhcvmgtqxwp.supabase.co/functions/v1/api-v1
+
 # Step 1 — request MFA token
 curl -s -X POST \
   -H "Content-Type: application/json" \
   -d '{"email":"candidate@dev-challenge.com","password":"Password123!"}' \
-  https://zvyhufnwclhcvmgtqxwp.supabase.co/functions/v1/api-v1/auth/token
+  $BASE/auth/token
 # → {"mfa_required":true,"mfa_token":"mfa_abc123...","message":"..."}
 
 # Step 2 — verify MFA and obtain bearer token
 MFA_TOKEN=mfa_abc123...
-curl -s -X POST \
+TOKEN=$(curl -s -X POST \
   -H "Content-Type: application/json" \
   -d "{\"mfa_token\":\"$MFA_TOKEN\",\"code\":\"1234\"}" \
-  https://zvyhufnwclhcvmgtqxwp.supabase.co/functions/v1/api-v1/auth/mfa/verify
-# → {"access_token":"eyJ...","token_type":"Bearer","expires_in":3600,...}
+  $BASE/auth/mfa/verify \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
+# Step 3 — update banking details
+curl -s -X PUT $BASE/account/banking \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"routing_number":"123456789","account_number":"1234567890"}'
+# → {"routing_masked":"•••••6789","account_masked":"••••••7890","token":"btok_..."}
+
+# Step 4 — update payment method
+curl -s -X PUT $BASE/account/payment \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"cardholder_name":"Test Candidate","card_number":"4242424242424242","exp_month":12,"exp_year":2035,"cvc":"123"}'
+# → {"card_brand":"visa","last4":"4242","exp_month":12,"exp_year":2035,"token":"tok_..."}
 ```
 
 **Expected output:**
