@@ -25,6 +25,11 @@ def test_routing_number_must_contain_only_digits() -> None:
         BankingDetails(routing_number="12345678A", account_number="1234567890")
 
 
+def test_account_number_must_contain_only_digits() -> None:
+    with pytest.raises(ValueError, match="account_number must contain only digits"):
+        BankingDetails(routing_number="123456789", account_number="1234X6789")
+
+
 def test_account_number_must_be_between_4_and_17_digits() -> None:
     with pytest.raises(ValueError, match="account_number must be 4 to 17 digits"):
         BankingDetails(routing_number="123456789", account_number="123")

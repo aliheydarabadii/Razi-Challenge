@@ -19,11 +19,14 @@ def _payment_method(**overrides: str) -> PaymentMethod:
     return PaymentMethod(**kwargs)
 
 
-def test_payment_method_stores_all_fields() -> None:
+def test_payment_method_accepts_valid_card_details() -> None:
     payment = _payment_method()
 
     assert payment.cardholder_name == "Test Candidate"
     assert payment.card_number == "4242424242424242"
+    assert payment.expiry_month == "12"
+    assert payment.expiry_year == "2030"
+    assert payment.cvc == "123"
 
 
 def test_cardholder_name_is_required() -> None:

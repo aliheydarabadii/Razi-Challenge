@@ -241,6 +241,7 @@ def test_update_banking_retries_on_server_error_then_succeeds() -> None:
             },
         ),
     ]
+
     result = client.update_banking("bearer", fake_banking_details())
 
     assert http.put.call_count == 2
