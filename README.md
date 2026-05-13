@@ -125,11 +125,11 @@ HEADED=true SLOW_MO_MS=500 uv run account-details-update browser
 4. Fill `#bank-routing`, `#bank-account` → click `#bank-save`
 5. Fill `#card-holder`, `#card-number`, `#card-exp-month`, `#card-exp-year`, `#card-cvc` → click `#card-save`
 
-**Expected output** (last-updated summary read from the account page after each save):
+**Expected output** (Sonner toast text read after each save):
 
 ```
-Routing •••••6789 — Account ••••••7890
-Visa ending in 4242 (12/2035)
+Banking details saved
+Payment method saved
 ```
 
 ## Part 2 — REST API Client

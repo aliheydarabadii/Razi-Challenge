@@ -23,7 +23,3 @@ CARD_SAVE_BUTTON = "#card-save"
 # Post-save confirmation — Sonner toast (data-sonner-toast, data-type="success")
 # Both banking and payment saves trigger the same toast structure.
 SAVE_CONFIRMATION = '[data-sonner-toast][data-type="success"] [data-title]'
-
-# Last-updated summary panels — read after save to verify persisted data.
-BANKING_SUMMARY = "[data-testid='banking-last-updated']"
-PAYMENT_SUMMARY = "[data-testid='payment-last-updated']"

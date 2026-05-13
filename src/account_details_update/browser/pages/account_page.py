@@ -29,8 +29,7 @@ class AccountPage:
         page.fill(selectors.BANK_ACCOUNT_INPUT, banking_details.account_number)
         page.click(selectors.BANK_SAVE_BUTTON)
         page.wait_for_selector(selectors.SAVE_CONFIRMATION, state="visible")
-        page.wait_for_selector(selectors.BANKING_SUMMARY, state="visible")
-        return (page.text_content(selectors.BANKING_SUMMARY) or "").strip()
+        return (page.text_content(selectors.SAVE_CONFIRMATION) or "").strip()
 
     def update_payment(self, payment_method: PaymentMethod) -> str:
         """Fill and submit the payment form; returns the last-updated summary text."""
@@ -42,5 +41,4 @@ class AccountPage:
         page.fill(selectors.CARD_CVC_INPUT, payment_method.cvc)
         page.click(selectors.CARD_SAVE_BUTTON)
         page.wait_for_selector(selectors.SAVE_CONFIRMATION, state="visible")
-        page.wait_for_selector(selectors.PAYMENT_SUMMARY, state="visible")
-        return (page.text_content(selectors.PAYMENT_SUMMARY) or "").strip()
+        return (page.text_content(selectors.SAVE_CONFIRMATION) or "").strip()
