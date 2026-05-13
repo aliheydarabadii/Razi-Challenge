@@ -10,6 +10,8 @@ from tests.support.fake_data import fake_banking_details, fake_payment_method
 _PAYMENT = fake_payment_method()
 _BANKING_TOAST = "Banking details saved"
 _PAYMENT_TOAST = "Payment method saved"
+_BANKING_SUMMARY = "Routing •••••6789 — Account ••••••7890"
+_PAYMENT_SUMMARY = "Visa ending in 4242 (12/2035)"
 
 
 def test_login_page_opens_and_submits_credentials() -> None:
@@ -45,35 +47,44 @@ def test_mfa_page_submits_code() -> None:
     ]
 
 
-def test_account_page_update_banking_waits_for_toast_and_returns_text() -> None:
-    page = FakePage(text_by_selector={selectors.SAVE_CONFIRMATION: _BANKING_TOAST})
+def _banking_page() -> FakePage:
+    return FakePage(text_by_selector={selectors.BANKING_SUMMARY: _BANKING_SUMMARY})
+
+
+def _payment_page() -> FakePage:
+    return FakePage(text_by_selector={selectors.PAYMENT_SUMMARY: _PAYMENT_SUMMARY})
+
+
+def test_account_page_update_banking_waits_for_toast_then_reads_summary() -> None:
+    page = _banking_page()
 
     summary = AccountPage(page).update_banking(fake_banking_details())
 
-    assert summary == _BANKING_TOAST
+    assert summary == _BANKING_SUMMARY
     assert (
-        "wait_for_selector",
-        selectors.SAVE_CONFIRMATION,
-        {"state": "visible"},
+        "wait_for_selector", selectors.SAVE_CONFIRMATION, {"state": "visible"}
+    ) in page.calls
+    assert (
+        "wait_for_selector", selectors.BANKING_SUMMARY, {"state": "visible"}
     ) in page.calls
 
 
-def test_account_page_update_payment_waits_for_toast_and_returns_text() -> None:
-    page = FakePage(text_by_selector={selectors.SAVE_CONFIRMATION: _PAYMENT_TOAST})
+def test_account_page_update_payment_waits_for_toast_then_reads_summary() -> None:
+    page = _payment_page()
 
     summary = AccountPage(page).update_payment(fake_payment_method())
 
-    assert summary == _PAYMENT_TOAST
+    assert summary == _PAYMENT_SUMMARY
     assert (
-        "wait_for_selector",
-        selectors.SAVE_CONFIRMATION,
-        {"state": "visible"},
+        "wait_for_selector", selectors.SAVE_CONFIRMATION, {"state": "visible"}
+    ) in page.calls
+    assert (
+        "wait_for_selector", selectors.PAYMENT_SUMMARY, {"state": "visible"}
     ) in page.calls
 
 
 def test_account_page_fills_and_submits_banking_form() -> None:
-    page = FakePage(text_by_selector={selectors.SAVE_CONFIRMATION: _BANKING_TOAST})
-
+    page = _banking_page()
     AccountPage(page).update_banking(fake_banking_details())
 
     assert ("fill", selectors.BANK_ROUTING_INPUT, "123456789") in page.calls
@@ -82,8 +93,7 @@ def test_account_page_fills_and_submits_banking_form() -> None:
 
 
 def test_account_page_fills_and_submits_payment_form() -> None:
-    page = FakePage(text_by_selector={selectors.SAVE_CONFIRMATION: _PAYMENT_TOAST})
-
+    page = _payment_page()
     AccountPage(page).update_payment(fake_payment_method())
 
     cardholder = _PAYMENT.cardholder_name

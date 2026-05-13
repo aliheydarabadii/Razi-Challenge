@@ -89,13 +89,15 @@ def _updater(page: FakePage, **kwargs: object) -> PlaywrightAccountUpdater:
     )
 
 
+_BANKING_SUMMARY = "Routing •••••6789 — Account ••••••7890"
+_PAYMENT_SUMMARY = "Visa ending in 4242 (12/2035)"
+
+
 def test_execute_calls_page_objects_in_order() -> None:
     page = FakePage(
         text_by_selector={
-            selectors.SAVE_CONFIRMATION: [
-                "Banking details saved",
-                "Payment method saved",
-            ]
+            selectors.BANKING_SUMMARY: _BANKING_SUMMARY,
+            selectors.PAYMENT_SUMMARY: _PAYMENT_SUMMARY,
         }
     )
 
@@ -125,7 +127,8 @@ def test_execute_calls_page_objects_in_order() -> None:
         ("fill", selectors.BANK_ACCOUNT_INPUT, "1234567890"),
         ("click", selectors.BANK_SAVE_BUTTON),
         ("wait_for_selector", selectors.SAVE_CONFIRMATION, {"state": "visible"}),
-        ("text_content", selectors.SAVE_CONFIRMATION),
+        ("wait_for_selector", selectors.BANKING_SUMMARY, {"state": "visible"}),
+        ("text_content", selectors.BANKING_SUMMARY),
         ("fill", selectors.CARDHOLDER_NAME_INPUT, _PAYMENT.cardholder_name),
         ("fill", selectors.CARD_NUMBER_INPUT, _PAYMENT.card_number),
         ("fill", selectors.CARD_EXPIRY_MONTH_INPUT, str(_PAYMENT.expiry_month)),
@@ -133,11 +136,12 @@ def test_execute_calls_page_objects_in_order() -> None:
         ("fill", selectors.CARD_CVC_INPUT, _PAYMENT.cvc),
         ("click", selectors.CARD_SAVE_BUTTON),
         ("wait_for_selector", selectors.SAVE_CONFIRMATION, {"state": "visible"}),
-        ("text_content", selectors.SAVE_CONFIRMATION),
+        ("wait_for_selector", selectors.PAYMENT_SUMMARY, {"state": "visible"}),
+        ("text_content", selectors.PAYMENT_SUMMARY),
     ]
     assert result == AccountUpdateResult(
-        banking_summary="Banking details saved",
-        payment_summary="Payment method saved",
+        banking_summary=_BANKING_SUMMARY,
+        payment_summary=_PAYMENT_SUMMARY,
     )
 
 

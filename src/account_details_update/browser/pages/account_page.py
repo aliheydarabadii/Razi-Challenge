@@ -23,16 +23,17 @@ class AccountPage:
         wait_for_page_idle(page)
 
     def update_banking(self, banking_details: BankingDetails) -> str:
-        """Fill and submit the banking form; returns the confirmation toast text."""
+        """Fill and submit the banking form; returns the last-updated summary text."""
         page = require_page(self.page)
         page.fill(selectors.BANK_ROUTING_INPUT, banking_details.routing_number)
         page.fill(selectors.BANK_ACCOUNT_INPUT, banking_details.account_number)
         page.click(selectors.BANK_SAVE_BUTTON)
         page.wait_for_selector(selectors.SAVE_CONFIRMATION, state="visible")
-        return (page.text_content(selectors.SAVE_CONFIRMATION) or "").strip()
+        page.wait_for_selector(selectors.BANKING_SUMMARY, state="visible")
+        return (page.text_content(selectors.BANKING_SUMMARY) or "").strip()
 
     def update_payment(self, payment_method: PaymentMethod) -> str:
-        """Fill and submit the payment form; returns the confirmation toast text."""
+        """Fill and submit the payment form; returns the last-updated summary text."""
         page = require_page(self.page)
         page.fill(selectors.CARDHOLDER_NAME_INPUT, payment_method.cardholder_name)
         page.fill(selectors.CARD_NUMBER_INPUT, payment_method.card_number)
@@ -41,4 +42,5 @@ class AccountPage:
         page.fill(selectors.CARD_CVC_INPUT, payment_method.cvc)
         page.click(selectors.CARD_SAVE_BUTTON)
         page.wait_for_selector(selectors.SAVE_CONFIRMATION, state="visible")
-        return (page.text_content(selectors.SAVE_CONFIRMATION) or "").strip()
+        page.wait_for_selector(selectors.PAYMENT_SUMMARY, state="visible")
+        return (page.text_content(selectors.PAYMENT_SUMMARY) or "").strip()
