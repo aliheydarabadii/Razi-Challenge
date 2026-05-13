@@ -10,29 +10,41 @@ The project follows hexagonal / clean architecture. The domain has no knowledge 
 
 ```
 account_details_update/
-  ports.py                  ← AccountUpdatePort protocol (runtime_checkable)
-  update_account_details.py ← use case — orchestrates login, MFA, updates, verify
-  account_details.py        ← BankingDetails, PaymentMethod value objects (validated)
-  account_update_result.py  ← AccountUpdateResult value object
+  ports.py                  ← AccountUpdatePort protocol + AccountUpdateResult
+  banking_details.py        ← BankingDetails value object (validated)
+  payment_method.py         ← PaymentMethod value object (Luhn check, expiry)
+  application/
+    commands.py             ← UpdateAccountDetailsCommand
+    update_account_details.py ← UpdateAccountDetailsHandler (CQRS handler)
   browser/
     playwright_account_updater.py  ← AccountUpdatePort adapter (Playwright)
-    pages/                         ← LoginPage, MfaPage, AccountPage objects
-    selectors.py                   ← id/data-testid selector constants
+    session.py                     ← BrowserSession — browser lifecycle
+    pages/
+      login_page.py         ← LoginPage page object
+      mfa_page.py           ← MfaPage page object
+      account_page.py       ← AccountPage page object
+      page_ready.py         ← wait_for_page_idle, require_page helpers
+    selectors.py            ← CSS selector constants
+    errors.py               ← BrowserPageError
   http_api/
-    razi_api_client.py      ← low-level httpx client
+    razi_api_client.py      ← low-level httpx client (auth + updates)
     api_account_updater.py  ← AccountUpdatePort adapter (REST API)
-    schemas.py              ← Pydantic request / response models
+    schemas/
+      _base.py              ← ApiRequest (extra=forbid), ApiResponse (extra=ignore)
+      authentication.py     ← TokenRequest/Response, MfaVerifyRequest/Response
+      banking.py            ← BankingUpdateRequest/Response
+      payment.py            ← PaymentUpdateRequest/Response
     errors.py               ← typed API exception hierarchy
   bootstrap/
     cli.py                  ← entrypoint — `browser` and `api` subcommands
     settings.py             ← pydantic-settings Settings (env / .env file)
-    logging.py              ← logging setup
+    logging.py              ← structured JSON logging setup
 tests/
   support/
-    fake_data.py            ← BankingDetails / PaymentMethod test factories
+    fake_data.py            ← fake_banking_details(), fake_payment_method()
     browser_fakes.py        ← FakePage, FakePlaywrightFactory
-  unit/                     ← 48 unit tests, all offline
-  integration/
+  unit/                     ← 54 unit tests, all offline
+  integration/              ← live sandbox tests (INTEGRATION_TESTS=1)
 ```
 
 ## Setup
