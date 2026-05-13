@@ -128,27 +128,24 @@ Uses `httpx` to authenticate and update account details via the REST API.
 uv run account-details-update api
 ```
 
-**Full flow:**
+**Full flow (copy-paste ready):**
 
 ```bash
 BASE=https://zvyhufnwclhcvmgtqxwp.supabase.co/functions/v1/api-v1
 
-# Step 1 — request MFA token
-curl -s -X POST \
+# Step 1 — authenticate and capture the MFA token
+MFA_TOKEN=$(curl -s -X POST \
   -H "Content-Type: application/json" \
   -d '{"email":"candidate@dev-challenge.com","password":"Password123!"}' \
-  $BASE/auth/token
-# → {"mfa_required":true,"mfa_token":"mfa_abc123...","message":"..."}
+  $BASE/auth/token \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['mfa_token'])")
 
-# Step 2 — verify MFA and obtain bearer token
-MFA_TOKEN=mfa_abc123...
-VERIFY_RESP=$(curl -s -X POST \
+# Step 2 — verify MFA and capture the bearer token
+TOKEN=$(curl -s -X POST \
   -H "Content-Type: application/json" \
   -d "{\"mfa_token\":\"$MFA_TOKEN\",\"code\":\"1234\"}" \
-  $BASE/auth/mfa/verify)
-echo "$VERIFY_RESP"
-# → {"access_token":"eyJ...","token_type":"Bearer","expires_in":3600,...}
-TOKEN=$(echo "$VERIFY_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+  $BASE/auth/mfa/verify \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 
 # Step 3 — update banking details
 curl -s -X PUT $BASE/account/banking \
