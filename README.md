@@ -134,46 +134,13 @@ Payment method saved
 
 ## Part 2 — REST API Client
 
-Uses `httpx` to authenticate (MFA always required) and update account details via the REST API.
+Uses `httpx` to authenticate and update account details via the REST API.
 
 ```bash
 uv run account-details-update api
 ```
 
-**Full flow (copy-paste ready):**
-
-```bash
-BASE=https://zvyhufnwclhcvmgtqxwp.supabase.co/functions/v1/api-v1
-
-# Step 1 — POST /auth/token → returns mfa_token
-MFA_TOKEN=$(curl -s -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"email":"candidate@dev-challenge.com","password":"Password123!"}' \
-  $BASE/auth/token \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['mfa_token'])")
-
-# Step 2 — POST /auth/mfa/verify → returns bearer token
-TOKEN=$(curl -s -X POST \
-  -H "Content-Type: application/json" \
-  -d "{\"mfa_token\":\"$MFA_TOKEN\",\"code\":\"1234\"}" \
-  $BASE/auth/mfa/verify \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-
-# Step 3 — update banking details
-curl -s -X PUT $BASE/account/banking \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"routing_number":"123456789","account_number":"1234567890"}'
-# → {"routing_masked":"•••••6789","account_masked":"••••••7890","token":"btok_..."}
-
-# Step 4 — update payment method
-PAYMENT='{"cardholder_name":"Test Candidate","card_number":"4242424242424242","exp_month":12,"exp_year":2035,"cvc":"123"}'
-curl -s -X PUT $BASE/account/payment \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "$PAYMENT"
-# → {"card_brand":"visa","last4":"4242","exp_month":12,"exp_year":2035,"token":"tok_..."}
-```
+**Auth flow:** `POST /auth/token` → receive `mfa_token` → `POST /auth/mfa/verify` → bearer token → `PUT /account/banking` → `PUT /account/payment`.
 
 **Expected output:**
 
