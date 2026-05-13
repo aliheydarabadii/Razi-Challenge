@@ -8,6 +8,7 @@ from dataclasses import KW_ONLY, InitVar, dataclass, field
 from typing import TypeVar
 
 import httpx
+import structlog
 from tenacity import (
     Retrying,
     before_sleep_log,
@@ -17,7 +18,6 @@ from tenacity import (
 )
 
 from ..banking_details import BankingDetails
-from ..logging import get_logger
 from ..payment_method import PaymentMethod
 from .errors import (
     ApiValidationError,
@@ -36,7 +36,7 @@ from .schemas.authentication import (
 from .schemas.banking import BankingUpdateRequest, BankingUpdateResponse
 from .schemas.payment import PaymentUpdateRequest, PaymentUpdateResponse
 
-_logger = get_logger()
+_logger = structlog.get_logger()
 
 # Errors that are transient and worth retrying.
 # AuthenticationError, MfaVerificationError, and ApiValidationError are not
@@ -47,16 +47,6 @@ _RETRYABLE = (RateLimitError, ServerError, httpx.TransportError)
 _DEFAULT_TIMEOUT = 30.0
 
 _T = TypeVar("_T")
-
-
-def _default_retrying() -> Retrying:
-    return Retrying(
-        retry=retry_if_exception_type(_RETRYABLE),
-        wait=wait_exponential(multiplier=1, min=1, max=30),
-        stop=stop_after_attempt(5),
-        reraise=True,
-        before_sleep=before_sleep_log(_logger, logging.WARNING),
-    )
 
 
 @dataclass(slots=True)
@@ -89,42 +79,11 @@ class RaziApiClient:
 
     def request_token(self) -> TokenResponse:
         """Step 1 of auth — POST /auth/token."""
-
-        def _call() -> TokenResponse:
-            _logger.info("request_token")
-            payload = TokenRequest(email=self.username, password=self.password)
-            response = self._http.post(
-                f"{self.base_url}/auth/token",
-                json=payload.model_dump(),
-            )
-            self._raise_for_status(response)
-            result = TokenResponse.model_validate(response.json())
-            _logger.info("token_obtained", mfa_required=result.mfa_required)
-            return result
-
-        return self._with_retry(_call)
+        return self._with_retry(self._post_token)
 
     def verify_mfa(self, token_response: TokenResponse) -> str:
         """Step 2 of auth — POST /auth/mfa/verify. Returns the bearer token."""
-
-        def _call() -> str:
-            _logger.info("verify_mfa")
-            payload = MfaVerifyRequest(
-                mfa_token=token_response.mfa_token,
-                code=self.mfa_code,
-            )
-            response = self._http.post(
-                f"{self.base_url}/auth/mfa/verify",
-                json=payload.model_dump(),
-            )
-            self._raise_for_status(response, unauthorized_error=MfaVerificationError)
-            access_token = MfaVerifyResponse.model_validate(
-                response.json()
-            ).access_token
-            _logger.info("mfa_verified")
-            return access_token
-
-        return self._with_retry(_call)
+        return self._with_retry(lambda: self._post_mfa_verify(token_response))
 
     def update_banking(
         self,
@@ -132,28 +91,9 @@ class RaziApiClient:
         banking_details: BankingDetails,
     ) -> BankingUpdateResponse:
         """PUT /account/banking — returns masked confirmation."""
-
-        def _call() -> BankingUpdateResponse:
-            _logger.info("update_banking")
-            payload = BankingUpdateRequest(
-                routing_number=banking_details.routing_number,
-                account_number=banking_details.account_number,
-            )
-            response = self._http.put(
-                f"{self.base_url}/account/banking",
-                json=payload.model_dump(),
-                headers={"Authorization": f"Bearer {bearer_token}"},
-            )
-            self._raise_for_status(response)
-            result = BankingUpdateResponse.model_validate(response.json())
-            _logger.info(
-                "banking_updated",
-                routing_masked=result.routing_masked,
-                account_masked=result.account_masked,
-            )
-            return result
-
-        return self._with_retry(_call)
+        return self._with_retry(
+            lambda: self._put_banking(bearer_token, banking_details)
+        )
 
     def update_payment(
         self,
@@ -161,36 +101,89 @@ class RaziApiClient:
         payment_method: PaymentMethod,
     ) -> PaymentUpdateResponse:
         """PUT /account/payment — returns masked card confirmation."""
-
-        def _call() -> PaymentUpdateResponse:
-            _logger.info("update_payment")
-            payload = PaymentUpdateRequest(
-                cardholder_name=payment_method.cardholder_name,
-                card_number=payment_method.card_number,
-                exp_month=int(payment_method.expiry_month),
-                exp_year=int(payment_method.expiry_year),
-                cvc=payment_method.cvc,
-            )
-            response = self._http.put(
-                f"{self.base_url}/account/payment",
-                json=payload.model_dump(),
-                headers={"Authorization": f"Bearer {bearer_token}"},
-            )
-            self._raise_for_status(response)
-            result = PaymentUpdateResponse.model_validate(response.json())
-            _logger.info(
-                "payment_updated",
-                card_brand=result.card_brand,
-                last4=result.last4,
-            )
-            return result
-
-        return self._with_retry(_call)
+        return self._with_retry(lambda: self._put_payment(bearer_token, payment_method))
 
     # ── Private helpers ───────────────────────────────────────────────────────
 
     def _with_retry(self, call: Callable[[], _T]) -> _T:
         return self._retry_policy(call)
+
+    def _post_token(self) -> TokenResponse:
+        _logger.info("request_token")
+        payload = TokenRequest(email=self.username, password=self.password)
+        response = self._http.post(
+            f"{self.base_url}/auth/token",
+            json=payload.model_dump(),
+        )
+        self._raise_for_status(response)
+        result = TokenResponse.model_validate(response.json())
+        _logger.info("token_obtained", mfa_required=result.mfa_required)
+        return result
+
+    def _post_mfa_verify(self, token_response: TokenResponse) -> str:
+        _logger.info("verify_mfa")
+        payload = MfaVerifyRequest(
+            mfa_token=token_response.mfa_token,
+            code=self.mfa_code,
+        )
+        response = self._http.post(
+            f"{self.base_url}/auth/mfa/verify",
+            json=payload.model_dump(),
+        )
+        self._raise_for_status(response, unauthorized_error=MfaVerificationError)
+        access_token = MfaVerifyResponse.model_validate(response.json()).access_token
+        _logger.info("mfa_verified")
+        return access_token
+
+    def _put_banking(
+        self,
+        bearer_token: str,
+        banking_details: BankingDetails,
+    ) -> BankingUpdateResponse:
+        _logger.info("update_banking")
+        payload = BankingUpdateRequest(
+            routing_number=banking_details.routing_number,
+            account_number=banking_details.account_number,
+        )
+        response = self._http.put(
+            f"{self.base_url}/account/banking",
+            json=payload.model_dump(),
+            headers={"Authorization": f"Bearer {bearer_token}"},
+        )
+        self._raise_for_status(response)
+        result = BankingUpdateResponse.model_validate(response.json())
+        _logger.info(
+            "banking_updated",
+            routing_masked=result.routing_masked,
+            account_masked=result.account_masked,
+        )
+        return result
+
+    def _put_payment(
+        self,
+        bearer_token: str,
+        payment_method: PaymentMethod,
+    ) -> PaymentUpdateResponse:
+        _logger.info("update_payment")
+        payload = PaymentUpdateRequest(
+            cardholder_name=payment_method.cardholder_name,
+            card_number=payment_method.card_number,
+            exp_month=int(payment_method.expiry_month),
+            exp_year=int(payment_method.expiry_year),
+            cvc=payment_method.cvc,
+        )
+        response = self._http.put(
+            f"{self.base_url}/account/payment",
+            json=payload.model_dump(),
+            headers={"Authorization": f"Bearer {bearer_token}"},
+        )
+        self._raise_for_status(response)
+        result = PaymentUpdateResponse.model_validate(response.json())
+        _logger.info(
+            "payment_updated", card_brand=result.card_brand, last4=result.last4
+        )
+
+        return result
 
     def _raise_for_status(
         self,
@@ -245,3 +238,13 @@ class RaziApiClient:
     ) -> None:
         if self._owns_http:
             self._http.close()
+
+
+def _default_retrying() -> Retrying:
+    return Retrying(
+        retry=retry_if_exception_type(_RETRYABLE),
+        wait=wait_exponential(multiplier=1, min=1, max=30),
+        stop=stop_after_attempt(5),
+        reraise=True,
+        before_sleep=before_sleep_log(_logger, logging.WARNING),
+    )
