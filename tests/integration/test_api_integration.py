@@ -50,8 +50,8 @@ def bearer_token(client: RaziApiClient) -> str:
 
 def test_request_token_succeeds(client: RaziApiClient) -> None:
     token_response = client.request_token()
-    # Native Supabase auth path: mfa_required is False, token cached internally.
-    assert token_response.mfa_required is False
+    assert token_response.mfa_required is True
+    assert token_response.mfa_token
 
 
 def test_verify_mfa_returns_jwt(client: RaziApiClient) -> None:
