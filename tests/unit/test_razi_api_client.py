@@ -17,6 +17,7 @@ from account_details_update.http_api.errors import (
 from account_details_update.http_api.razi_api_client import RaziApiClient
 from account_details_update.http_api.schemas.authentication import TokenResponse
 from account_details_update.payment_method import PaymentMethod
+from tests.support.fake_data import fake_banking_details
 
 # Fast retrying used by all existing tests — no wait, single attempt.
 # This keeps tests instant while still exercising the retry code path.
@@ -163,10 +164,9 @@ def test_update_banking_raises_validation_error_on_422() -> None:
     client, _ = _make_client(
         put_response=httpx.Response(422, json={"error": "Invalid routing number"})
     )
-    banking = BankingDetails(routing_number="123456789", account_number="1234567890")
 
     with pytest.raises(ApiValidationError, match="Invalid routing number"):
-        client.update_banking("bearer", banking)
+        client.update_banking("bearer", fake_banking_details())
 
 
 # ── update_payment ────────────────────────────────────────────────────────────
@@ -242,9 +242,7 @@ def test_update_banking_retries_on_server_error_then_succeeds() -> None:
             },
         ),
     ]
-    banking = BankingDetails(routing_number="123456789", account_number="1234567890")
-
-    result = client.update_banking("bearer", banking)
+    result = client.update_banking("bearer", fake_banking_details())
 
     assert http.put.call_count == 2
     assert result.routing_masked == "•••••6789"
@@ -323,9 +321,8 @@ def test_validation_error_is_not_retried() -> None:
         put_response=httpx.Response(422, json={"error": "Invalid routing"}),
         retrying=_FAST_RETRY,
     )
-    banking = BankingDetails(routing_number="123456789", account_number="1234567890")
 
     with pytest.raises(ApiValidationError):
-        client.update_banking("bearer", banking)
+        client.update_banking("bearer", fake_banking_details())
 
     assert http.put.call_count == 1

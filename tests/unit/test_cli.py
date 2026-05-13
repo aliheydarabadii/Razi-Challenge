@@ -10,6 +10,7 @@ from account_details_update.bootstrap.cli import (
     main,
 )
 from account_details_update.bootstrap.settings import Settings
+from account_details_update.browser.errors import BrowserPageError
 from account_details_update.http_api.errors import RaziApiError
 from account_details_update.ports import AccountUpdateResult
 
@@ -106,8 +107,6 @@ def test_main_browser_returns_one_on_configuration_error(
 def test_main_browser_returns_one_on_browser_page_error(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    from account_details_update.browser.errors import BrowserPageError
-
     with (
         patch(f"{_CLI}.load_settings", return_value=_test_settings()),
         patch(f"{_CLI}.PlaywrightAccountUpdater") as MockUpdater,
