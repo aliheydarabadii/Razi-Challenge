@@ -155,10 +155,11 @@ curl -s -X PUT $BASE/account/banking \
 # → {"routing_masked":"•••••6789","account_masked":"••••••7890","token":"btok_..."}
 
 # Step 4 — update payment method
+PAYMENT='{"cardholder_name":"Test Candidate","card_number":"4242424242424242","exp_month":12,"exp_year":2035,"cvc":"123"}'
 curl -s -X PUT $BASE/account/payment \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"cardholder_name":"Test Candidate","card_number":"4242424242424242","exp_month":12,"exp_year":2035,"cvc":"123"}'
+  -d "$PAYMENT"
 # → {"card_brand":"visa","last4":"4242","exp_month":12,"exp_year":2035,"token":"tok_..."}
 ```
 
