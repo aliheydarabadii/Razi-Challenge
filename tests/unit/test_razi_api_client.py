@@ -287,32 +287,32 @@ def test_request_token_raises_after_exhausting_retries() -> None:
 # ── close / resource ownership ────────────────────────────────────────────────
 
 
-def test_close_does_not_close_injected_http_client() -> None:
+def test_injected_http_client_is_not_closed_on_exit() -> None:
     http = MagicMock(spec=httpx.Client)
-    client = RaziApiClient(
+    with RaziApiClient(
         base_url="https://api.example.com",
         username="u",
         password="p",
         mfa_code="1234",
         _http_client=http,
-    )
-    client.close()
+    ):
+        pass
     http.close.assert_not_called()
 
 
-def test_context_manager_closes_owned_http_client() -> None:
+def test_owned_http_client_is_closed_on_exit() -> None:
     mock_http = MagicMock(spec=httpx.Client)
     with patch(
         "account_details_update.http_api.razi_api_client.httpx.Client",
         return_value=mock_http,
     ):
-        client = RaziApiClient(
+        with RaziApiClient(
             base_url="https://api.example.com",
             username="u",
             password="p",
             mfa_code="1234",
-        )
-    client.close()
+        ):
+            pass
     mock_http.close.assert_called_once()
 
 

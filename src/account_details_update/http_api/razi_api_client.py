@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
+from dataclasses import KW_ONLY, InitVar, dataclass, field
+from typing import TypeVar
 
 import httpx
 import structlog
@@ -43,6 +46,8 @@ _RETRYABLE = (RateLimitError, ServerError, httpx.TransportError)
 # Seconds before an individual HTTP call is abandoned.
 _DEFAULT_TIMEOUT = 30.0
 
+_T = TypeVar("_T")
+
 
 def _default_retrying() -> Retrying:
     return Retrying(
@@ -54,6 +59,7 @@ def _default_retrying() -> Retrying:
     )
 
 
+@dataclass(slots=True)
 class RaziApiClient:
     """HTTP client for the Razi REST API.
 
@@ -64,46 +70,29 @@ class RaziApiClient:
     attempts. Authentication and validation errors are not retried.
     """
 
-    def __init__(
-        self,
-        base_url: str,
-        username: str,
-        password: str,
-        mfa_code: str,
-        timeout: float = _DEFAULT_TIMEOUT,
-        _http_client: httpx.Client | None = None,
-        _retrying: Retrying | None = None,
-    ) -> None:
-        self.base_url = base_url.rstrip("/")
-        self._username = username
-        self._password = password
-        self._mfa_code = mfa_code
-        self._owns_http = _http_client is None
-        self._http = _http_client or httpx.Client(timeout=timeout)
-        self._retrying = _retrying if _retrying is not None else _default_retrying()
+    base_url: str
+    username: str
+    password: str
+    mfa_code: str
 
-    def close(self) -> None:
-        """Close the underlying HTTP client if it was created by this instance."""
-        if self._owns_http:
-            self._http.close()
+    _: KW_ONLY
 
-    def __enter__(self) -> RaziApiClient:
-        return self
+    timeout: float = _DEFAULT_TIMEOUT
+    _http_client: InitVar[httpx.Client | None] = None
+    _retrying: InitVar[Retrying | None] = None
 
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc: BaseException | None,
-        tb: object,
-    ) -> None:
-        self.close()
+    _owns_http: bool = field(default=False, init=False)
+    _http: httpx.Client = field(init=False)
+    _retry_policy: Retrying = field(init=False)
+
+    # ── AccountUpdatePort ─────────────────────────────────────────────────────
 
     def request_token(self) -> TokenResponse:
         """Step 1 of auth — POST /auth/token."""
 
         def _call() -> TokenResponse:
             _logger.info("request_token")
-            payload = TokenRequest(email=self._username, password=self._password)
+            payload = TokenRequest(email=self.username, password=self.password)
             response = self._http.post(
                 f"{self.base_url}/auth/token",
                 json=payload.model_dump(),
@@ -113,7 +102,7 @@ class RaziApiClient:
             _logger.info("token_obtained", mfa_required=result.mfa_required)
             return result
 
-        return self._retrying(_call)
+        return self._with_retry(_call)
 
     def verify_mfa(self, token_response: TokenResponse) -> str:
         """Step 2 of auth — POST /auth/mfa/verify. Returns the bearer token."""
@@ -122,20 +111,20 @@ class RaziApiClient:
             _logger.info("verify_mfa")
             payload = MfaVerifyRequest(
                 mfa_token=token_response.mfa_token,
-                code=self._mfa_code,
+                code=self.mfa_code,
             )
             response = self._http.post(
                 f"{self.base_url}/auth/mfa/verify",
                 json=payload.model_dump(),
             )
-            self._raise_for_status(response, is_mfa=True)
+            self._raise_for_status(response, unauthorized_error=MfaVerificationError)
             access_token = MfaVerifyResponse.model_validate(
                 response.json()
             ).access_token
             _logger.info("mfa_verified")
             return access_token
 
-        return self._retrying(_call)
+        return self._with_retry(_call)
 
     def update_banking(
         self,
@@ -164,7 +153,7 @@ class RaziApiClient:
             )
             return result
 
-        return self._retrying(_call)
+        return self._with_retry(_call)
 
     def update_payment(
         self,
@@ -196,26 +185,25 @@ class RaziApiClient:
             )
             return result
 
-        return self._retrying(_call)
+        return self._with_retry(_call)
+
+    # ── Private helpers ───────────────────────────────────────────────────────
+
+    def _with_retry(self, call: Callable[[], _T]) -> _T:
+        return self._retry_policy(call)
 
     def _raise_for_status(
-        self, response: httpx.Response, *, is_mfa: bool = False
+        self,
+        response: httpx.Response,
+        *,
+        unauthorized_error: type[RaziApiError] = AuthenticationError,
     ) -> None:
         if response.is_success:
             return
         status = response.status_code
-        try:
-            data = response.json()
-            if isinstance(data, dict):
-                detail = data.get("error") or data.get("message") or response.text
-            else:
-                detail = response.text
-        except ValueError:
-            detail = response.text
+        detail = self._extract_detail(response)
         if status == 401:
-            if is_mfa:
-                raise MfaVerificationError(detail)
-            raise AuthenticationError(detail)
+            raise unauthorized_error(detail)
         if status == 422:
             raise ApiValidationError(detail)
         if status == 429:
@@ -223,3 +211,37 @@ class RaziApiClient:
         if status >= 500:
             raise ServerError(f"HTTP {status}: {detail}")
         raise RaziApiError(f"HTTP {status}: {detail}")
+
+    @staticmethod
+    def _extract_detail(response: httpx.Response) -> str:
+        try:
+            data = response.json()
+            if isinstance(data, dict):
+                return data.get("error") or data.get("message") or response.text
+        except ValueError:
+            pass
+        return response.text
+
+    # ── Protocol / initialisation (boilerplate) ───────────────────────────────
+
+    def __post_init__(
+        self,
+        _http_client: httpx.Client | None,
+        _retrying: Retrying | None,
+    ) -> None:
+        self.base_url = self.base_url.rstrip("/")
+        self._owns_http = _http_client is None
+        self._http = _http_client or httpx.Client(timeout=self.timeout)
+        self._retry_policy = _retrying if _retrying is not None else _default_retrying()
+
+    def __enter__(self) -> RaziApiClient:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: object,
+    ) -> None:
+        if self._owns_http:
+            self._http.close()
