@@ -7,8 +7,6 @@ import sys
 
 import structlog
 
-get_logger = structlog.get_logger
-
 
 def configure_logging() -> None:
     """Configure structured JSON logging for the application.

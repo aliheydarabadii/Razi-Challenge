@@ -17,7 +17,7 @@ from tenacity import (
 )
 
 from ..banking_details import BankingDetails
-from ..bootstrap.logging import get_logger
+from ..logging import get_logger
 from ..payment_method import PaymentMethod
 from .errors import (
     ApiValidationError,
