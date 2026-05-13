@@ -47,29 +47,6 @@ class PlaywrightAccountUpdater:
     mfa_page: MfaPage = field(init=False)
     account_page: AccountPage = field(init=False)
 
-    def __post_init__(self) -> None:
-        self.base_url = self.base_url.rstrip("/")
-        if not self.login_url:
-            self.login_url = _join_url(self.base_url, DEFAULT_LOGIN_PATH)
-        if not self.account_url:
-            self.account_url = _join_url(self.base_url, DEFAULT_ACCOUNT_PATH)
-        self._owns_page = self.page is None
-        self._bind_page_objects(self.page)
-
-    # ── Context manager ───────────────────────────────────────────────────────
-
-    def __enter__(self) -> PlaywrightAccountUpdater:
-        self._ensure_page()
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> None:
-        self.close()
-
     # ── AccountUpdatePort ─────────────────────────────────────────────────────
 
     def execute(
@@ -148,6 +125,29 @@ class PlaywrightAccountUpdater:
         self.login_page = LoginPage(page)
         self.mfa_page = MfaPage(page)
         self.account_page = AccountPage(page)
+
+    # ── Protocol / initialisation (boilerplate) ───────────────────────────────
+
+    def __post_init__(self) -> None:
+        self.base_url = self.base_url.rstrip("/")
+        if not self.login_url:
+            self.login_url = _join_url(self.base_url, DEFAULT_LOGIN_PATH)
+        if not self.account_url:
+            self.account_url = _join_url(self.base_url, DEFAULT_ACCOUNT_PATH)
+        self._owns_page = self.page is None
+        self._bind_page_objects(self.page)
+
+    def __enter__(self) -> PlaywrightAccountUpdater:
+        self._ensure_page()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        self.close()
 
 
 def _join_url(base_url: str, path: str) -> str:
