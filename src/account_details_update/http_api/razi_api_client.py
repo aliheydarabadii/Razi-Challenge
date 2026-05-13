@@ -8,7 +8,6 @@ from dataclasses import KW_ONLY, InitVar, dataclass, field
 from typing import TypeVar
 
 import httpx
-import structlog
 from tenacity import (
     Retrying,
     before_sleep_log,
@@ -18,6 +17,7 @@ from tenacity import (
 )
 
 from ..banking_details import BankingDetails
+from ..bootstrap.logging import get_logger
 from ..payment_method import PaymentMethod
 from .errors import (
     ApiValidationError,
@@ -36,7 +36,7 @@ from .schemas.authentication import (
 from .schemas.banking import BankingUpdateRequest, BankingUpdateResponse
 from .schemas.payment import PaymentUpdateRequest, PaymentUpdateResponse
 
-_logger = structlog.get_logger()
+_logger = get_logger()
 
 # Errors that are transient and worth retrying.
 # AuthenticationError, MfaVerificationError, and ApiValidationError are not
