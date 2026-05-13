@@ -12,7 +12,9 @@ WORKDIR /app
 
 COPY pyproject.toml README.md uv.lock ./
 COPY src/ src/
-RUN uv sync --frozen --no-cache --no-dev --system
+RUN uv sync --frozen --no-cache --no-dev
+
+ENV PATH="/app/.venv/bin:$PATH"
 
 RUN adduser --disabled-password --gecos "" appuser
 USER appuser
