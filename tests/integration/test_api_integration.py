@@ -104,8 +104,8 @@ def test_update_payment_returns_card_confirmation(
     result = client.update_payment(bearer_token, payment)
 
     assert result.last4 == settings.card_number[-4:]
-    assert result.exp_month == int(settings.card_expiry_month)
-    assert result.exp_year == int(settings.card_expiry_year)
+    assert result.exp_month == settings.card_expiry_month
+    assert result.exp_year == settings.card_expiry_year
     assert result.card_brand  # e.g. "visa"
     assert result.token  # server returns a card token
 

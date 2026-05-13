@@ -45,8 +45,6 @@ _RETRYABLE = (RateLimitError, ServerError, httpx.TransportError)
 
 # Seconds before an individual HTTP call is abandoned.
 _DEFAULT_TIMEOUT = 30.0
-_DEFAULT_MAX_RETRIES = 5
-_DEFAULT_RETRY_MAX_WAIT = 30
 
 _T = TypeVar("_T")
 
@@ -70,8 +68,8 @@ class RaziApiClient:
     _: KW_ONLY
 
     timeout: float = _DEFAULT_TIMEOUT
-    max_retries: int = _DEFAULT_MAX_RETRIES
-    retry_max_wait: int = _DEFAULT_RETRY_MAX_WAIT
+    max_retries: int = 5
+    retry_max_wait: int = 30
     _http_client: InitVar[httpx.Client | None] = None
     _retrying: InitVar[Retrying | None] = None
 
@@ -172,8 +170,8 @@ class RaziApiClient:
         payload = PaymentUpdateRequest(
             cardholder_name=payment_method.cardholder_name,
             card_number=payment_method.card_number,
-            exp_month=int(payment_method.expiry_month),
-            exp_year=int(payment_method.expiry_year),
+            exp_month=payment_method.expiry_month,
+            exp_year=payment_method.expiry_year,
             cvc=payment_method.cvc,
         )
         response = self._http.put(

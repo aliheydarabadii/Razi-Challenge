@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass
 from datetime import date
 
 _CARD_NUMBER_MIN = 13
@@ -16,15 +16,16 @@ class PaymentMethod:
 
     cardholder_name: str
     card_number: str
-    expiry_month: str
-    expiry_year: str
+    expiry_month: int
+    expiry_year: int
     cvc: str
+    reference_date: InitVar[date | None] = None
 
-    def __post_init__(self) -> None:
+    def __post_init__(self, reference_date: date | None) -> None:
         self._validate_cardholder_name()
         self._validate_card_number()
         self._validate_cvc()
-        self._validate_expiry()
+        self._validate_expiry(reference_date or date.today())
 
     def _validate_cardholder_name(self) -> None:
         if not self.cardholder_name.strip():
@@ -44,16 +45,13 @@ class PaymentMethod:
         if not self.cvc.isdigit() or len(self.cvc) not in _VALID_CVC_LENGTHS:
             raise ValueError("cvc must be 3 or 4 digits")
 
-    def _validate_expiry(self) -> None:
-        if not self.expiry_month.isdigit():
-            raise ValueError("expiry_month must contain only digits")
-        month = int(self.expiry_month)
-        if not 1 <= month <= 12:
+    def _validate_expiry(self, reference_date: date) -> None:
+        if not 1 <= self.expiry_month <= 12:
             raise ValueError("expiry_month must be 1 to 12")
-        if not self.expiry_year.isdigit() or len(self.expiry_year) != 4:
+        if not 1000 <= self.expiry_year <= 9999:
             raise ValueError("expiry_year must be a 4 digit year")
-        today = date.today()
-        if (int(self.expiry_year), month) < (today.year, today.month):
+        card = (self.expiry_year, self.expiry_month)
+        if card < (reference_date.year, reference_date.month):
             raise ValueError("card has already expired")
 
 

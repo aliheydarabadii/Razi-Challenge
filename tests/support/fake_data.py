@@ -19,7 +19,7 @@ def fake_payment_method() -> PaymentMethod:
     return PaymentMethod(
         cardholder_name="Test Candidate",
         card_number="4242424242424242",
-        expiry_month="12",
-        expiry_year=str(date.today().year + 5),
+        expiry_month=12,
+        expiry_year=date.today().year + 5,
         cvc="123",
     )

@@ -6,17 +6,20 @@ import pytest
 
 from account_details_update.payment_method import PaymentMethod
 
+_REFERENCE = date(2026, 5, 1)
 
-def _payment_method(**overrides: str) -> PaymentMethod:
-    kwargs: dict[str, str] = dict(
+
+def _payment_method(**overrides: object) -> PaymentMethod:
+    kwargs: dict[str, object] = dict(
         cardholder_name="Test Candidate",
         card_number="4242424242424242",
-        expiry_month="12",
-        expiry_year="2030",
+        expiry_month=12,
+        expiry_year=2030,
         cvc="123",
+        reference_date=_REFERENCE,
     )
     kwargs.update(overrides)
-    return PaymentMethod(**kwargs)
+    return PaymentMethod(**kwargs)  # type: ignore[arg-type]
 
 
 def test_payment_method_accepts_valid_card_details() -> None:
@@ -24,8 +27,8 @@ def test_payment_method_accepts_valid_card_details() -> None:
 
     assert payment.cardholder_name == "Test Candidate"
     assert payment.card_number == "4242424242424242"
-    assert payment.expiry_month == "12"
-    assert payment.expiry_year == "2030"
+    assert payment.expiry_month == 12
+    assert payment.expiry_year == 2030
     assert payment.cvc == "123"
 
 
@@ -56,12 +59,11 @@ def test_card_number_must_pass_luhn_check() -> None:
 
 def test_card_expired_in_a_previous_year_is_rejected() -> None:
     with pytest.raises(ValueError, match="card has already expired"):
-        _payment_method(expiry_year=str(date.today().year - 1))
+        _payment_method(expiry_year=2025, reference_date=date(2026, 1, 1))
 
 
 def test_card_expired_earlier_this_year_is_rejected() -> None:
-    today = date.today()
-    if today.month == 1:
-        pytest.skip("no elapsed months in January to test against")
     with pytest.raises(ValueError, match="card has already expired"):
-        _payment_method(expiry_month=str(today.month - 1), expiry_year=str(today.year))
+        _payment_method(
+            expiry_month=1, expiry_year=2026, reference_date=date(2026, 5, 1)
+        )

@@ -186,8 +186,8 @@ def test_update_payment_puts_with_bearer_and_returns_masked_confirmation() -> No
     payment = PaymentMethod(
         cardholder_name="Test Candidate",
         card_number="4242424242424242",
-        expiry_month="12",
-        expiry_year="2030",
+        expiry_month=12,
+        expiry_year=2030,
         cvc="123",
     )
 
