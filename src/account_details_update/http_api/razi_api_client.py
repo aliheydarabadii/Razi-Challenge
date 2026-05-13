@@ -41,7 +41,7 @@ _logger = structlog.get_logger()
 # Errors that are transient and worth retrying.
 # AuthenticationError, MfaVerificationError, and ApiValidationError are not
 # retried — they indicate a caller problem that won't resolve on its own.
-_RETRYABLE = (RateLimitError, ServerError, httpx.TransportError)
+RETRYABLE = (RateLimitError, ServerError, httpx.TransportError)
 
 # Seconds before an individual HTTP call is abandoned.
 _DEFAULT_TIMEOUT = 30.0
@@ -241,7 +241,7 @@ class RaziApiClient:
 
 def _default_retrying() -> Retrying:
     return Retrying(
-        retry=retry_if_exception_type(_RETRYABLE),
+        retry=retry_if_exception_type(RETRYABLE),
         wait=wait_exponential(multiplier=1, min=1, max=30),
         stop=stop_after_attempt(5),
         reraise=True,

@@ -14,14 +14,14 @@ from account_details_update.http_api.errors import (
     RateLimitError,
     ServerError,
 )
-from account_details_update.http_api.razi_api_client import _RETRYABLE, RaziApiClient
+from account_details_update.http_api.razi_api_client import RETRYABLE, RaziApiClient
 from account_details_update.http_api.schemas.authentication import TokenResponse
 from account_details_update.payment_method import PaymentMethod
 
 # Fast retrying used by all existing tests — no wait, single attempt.
 # This keeps tests instant while still exercising the retry code path.
 _NO_RETRY = Retrying(
-    retry=retry_if_exception_type(_RETRYABLE),
+    retry=retry_if_exception_type(RETRYABLE),
     wait=wait_none(),
     stop=stop_after_attempt(1),
     reraise=True,
@@ -29,7 +29,7 @@ _NO_RETRY = Retrying(
 
 # Fast retrying used by retry-specific tests — no wait, multiple attempts.
 _FAST_RETRY = Retrying(
-    retry=retry_if_exception_type(_RETRYABLE),
+    retry=retry_if_exception_type(RETRYABLE),
     wait=wait_none(),
     stop=stop_after_attempt(5),
     reraise=True,
@@ -213,7 +213,7 @@ def test_update_payment_puts_with_bearer_and_returns_masked_confirmation() -> No
 
 
 def test_request_token_retries_on_rate_limit_then_succeeds() -> None:
-    http = MagicMock(spec=httpx.Client)
+    client, http = _make_client(retrying=_FAST_RETRY)
     http.post.side_effect = [
         httpx.Response(429, json={"error": "Rate limit exceeded"}),
         httpx.Response(429, json={"error": "Rate limit exceeded"}),
@@ -222,8 +222,6 @@ def test_request_token_retries_on_rate_limit_then_succeeds() -> None:
             json={"mfa_required": True, "mfa_token": "mfa_abc", "message": "ok"},
         ),
     ]
-    client, _ = _make_client(post_response=None, retrying=_FAST_RETRY)
-    client._http = http
 
     token = client.request_token()
 
@@ -232,7 +230,7 @@ def test_request_token_retries_on_rate_limit_then_succeeds() -> None:
 
 
 def test_update_banking_retries_on_server_error_then_succeeds() -> None:
-    http = MagicMock(spec=httpx.Client)
+    client, http = _make_client(retrying=_FAST_RETRY)
     http.put.side_effect = [
         httpx.Response(503, json={"error": "Service unavailable"}),
         httpx.Response(
@@ -244,8 +242,6 @@ def test_update_banking_retries_on_server_error_then_succeeds() -> None:
             },
         ),
     ]
-    client, _ = _make_client(put_response=None, retrying=_FAST_RETRY)
-    client._http = http
     banking = BankingDetails(routing_number="123456789", account_number="1234567890")
 
     result = client.update_banking("bearer", banking)
