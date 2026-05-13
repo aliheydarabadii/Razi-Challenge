@@ -116,8 +116,8 @@ HEADED=true SLOW_MO_MS=500 uv run account-details-update browser
 **Expected output:**
 
 ```
-Banking details updated successfully.
-Payment method updated successfully.
+Banking details saved
+Payment method saved
 ```
 
 ## Part 2 — REST API Client
