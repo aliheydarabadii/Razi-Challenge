@@ -28,8 +28,8 @@ class AccountPage:
         page.fill(selectors.BANK_ROUTING_INPUT, banking_details.routing_number)
         page.fill(selectors.BANK_ACCOUNT_INPUT, banking_details.account_number)
         page.click(selectors.BANK_SAVE_BUTTON)
-        page.wait_for_selector(selectors.BANK_CONFIRMATION, state="visible")
-        return (page.text_content(selectors.BANK_CONFIRMATION) or "").strip()
+        page.wait_for_selector(selectors.SAVE_CONFIRMATION, state="visible")
+        return (page.text_content(selectors.SAVE_CONFIRMATION) or "").strip()
 
     def update_payment(self, payment_method: PaymentMethod) -> str:
         """Fill and submit the payment form; returns the confirmation toast text."""
@@ -40,5 +40,5 @@ class AccountPage:
         page.fill(selectors.CARD_EXPIRY_YEAR_INPUT, payment_method.expiry_year)
         page.fill(selectors.CARD_CVC_INPUT, payment_method.cvc)
         page.click(selectors.CARD_SAVE_BUTTON)
-        page.wait_for_selector(selectors.CARD_CONFIRMATION, state="visible")
-        return (page.text_content(selectors.CARD_CONFIRMATION) or "").strip()
+        page.wait_for_selector(selectors.SAVE_CONFIRMATION, state="visible")
+        return (page.text_content(selectors.SAVE_CONFIRMATION) or "").strip()

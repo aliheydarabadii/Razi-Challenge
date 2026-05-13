@@ -8,6 +8,8 @@ from tests.support.browser_fakes import FakePage
 from tests.support.fake_data import fake_banking_details, fake_payment_method
 
 _PAYMENT = fake_payment_method()
+_BANKING_TOAST = "Banking details saved"
+_PAYMENT_TOAST = "Payment method saved"
 
 
 def test_login_page_opens_and_submits_credentials() -> None:
@@ -43,44 +45,34 @@ def test_mfa_page_submits_code() -> None:
     ]
 
 
-_BANK_CONFIRMATION_TEXT = "Banking details updated successfully."
-_CARD_CONFIRMATION_TEXT = "Payment method updated successfully."
-
-
-def test_account_page_update_banking_returns_confirmation() -> None:
-    page = FakePage(
-        text_by_selector={selectors.BANK_CONFIRMATION: _BANK_CONFIRMATION_TEXT}
-    )
+def test_account_page_update_banking_waits_for_toast_and_returns_text() -> None:
+    page = FakePage(text_by_selector={selectors.SAVE_CONFIRMATION: _BANKING_TOAST})
 
     summary = AccountPage(page).update_banking(fake_banking_details())
 
-    assert summary == _BANK_CONFIRMATION_TEXT
+    assert summary == _BANKING_TOAST
     assert (
         "wait_for_selector",
-        selectors.BANK_CONFIRMATION,
+        selectors.SAVE_CONFIRMATION,
         {"state": "visible"},
     ) in page.calls
 
 
-def test_account_page_update_payment_returns_confirmation() -> None:
-    page = FakePage(
-        text_by_selector={selectors.CARD_CONFIRMATION: _CARD_CONFIRMATION_TEXT}
-    )
+def test_account_page_update_payment_waits_for_toast_and_returns_text() -> None:
+    page = FakePage(text_by_selector={selectors.SAVE_CONFIRMATION: _PAYMENT_TOAST})
 
     summary = AccountPage(page).update_payment(fake_payment_method())
 
-    assert summary == _CARD_CONFIRMATION_TEXT
+    assert summary == _PAYMENT_TOAST
     assert (
         "wait_for_selector",
-        selectors.CARD_CONFIRMATION,
+        selectors.SAVE_CONFIRMATION,
         {"state": "visible"},
     ) in page.calls
 
 
 def test_account_page_fills_and_submits_banking_form() -> None:
-    page = FakePage(
-        text_by_selector={selectors.BANK_CONFIRMATION: _BANK_CONFIRMATION_TEXT}
-    )
+    page = FakePage(text_by_selector={selectors.SAVE_CONFIRMATION: _BANKING_TOAST})
 
     AccountPage(page).update_banking(fake_banking_details())
 
@@ -90,9 +82,7 @@ def test_account_page_fills_and_submits_banking_form() -> None:
 
 
 def test_account_page_fills_and_submits_payment_form() -> None:
-    page = FakePage(
-        text_by_selector={selectors.CARD_CONFIRMATION: _CARD_CONFIRMATION_TEXT}
-    )
+    page = FakePage(text_by_selector={selectors.SAVE_CONFIRMATION: _PAYMENT_TOAST})
 
     AccountPage(page).update_payment(fake_payment_method())
 

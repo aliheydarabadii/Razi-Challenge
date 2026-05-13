@@ -4,9 +4,18 @@ from typing import Any
 
 
 class FakePage:
-    def __init__(self, text_by_selector: dict[str, str] | None = None) -> None:
+    """Minimal fake for a Playwright page.
+
+    text_by_selector values may be a plain str (returned every time) or a
+    list[str] (values are consumed in order, one per call).
+    """
+
+    def __init__(
+        self,
+        text_by_selector: dict[str, str | list[str]] | None = None,
+    ) -> None:
         self.calls: list[tuple[Any, ...]] = []
-        self.text_by_selector = text_by_selector or {}
+        self._text_by_selector: dict[str, str | list[str]] = text_by_selector or {}
 
     def goto(self, url: str, **kwargs: Any) -> None:
         self.calls.append(("goto", url, kwargs))
@@ -25,4 +34,7 @@ class FakePage:
 
     def text_content(self, selector: str) -> str | None:
         self.calls.append(("text_content", selector))
-        return self.text_by_selector.get(selector)
+        value = self._text_by_selector.get(selector)
+        if isinstance(value, list):
+            return value.pop(0) if value else None
+        return value

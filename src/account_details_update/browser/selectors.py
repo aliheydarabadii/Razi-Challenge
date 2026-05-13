@@ -20,6 +20,6 @@ CARD_EXPIRY_YEAR_INPUT = "#card-exp-year"
 CARD_CVC_INPUT = "#card-cvc"
 CARD_SAVE_BUTTON = "#card-save"
 
-# Post-save confirmation elements — verified against challenge site HTML
-BANK_CONFIRMATION = "#bank-confirmation"
-CARD_CONFIRMATION = "#card-confirmation"
+# Post-save confirmation — Sonner toast (data-sonner-toast, data-type="success")
+# Both banking and payment saves trigger the same toast structure.
+SAVE_CONFIRMATION = '[data-sonner-toast][data-type="success"] [data-title]'
