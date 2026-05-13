@@ -55,7 +55,11 @@ def test_account_page_update_banking_returns_confirmation() -> None:
     summary = AccountPage(page).update_banking(fake_banking_details())
 
     assert summary == _BANK_CONFIRMATION_TEXT
-    assert ("text_content", selectors.BANK_CONFIRMATION) in page.calls
+    assert (
+        "wait_for_selector",
+        selectors.BANK_CONFIRMATION,
+        {"state": "visible"},
+    ) in page.calls
 
 
 def test_account_page_update_payment_returns_confirmation() -> None:
@@ -66,7 +70,11 @@ def test_account_page_update_payment_returns_confirmation() -> None:
     summary = AccountPage(page).update_payment(fake_payment_method())
 
     assert summary == _CARD_CONFIRMATION_TEXT
-    assert ("text_content", selectors.CARD_CONFIRMATION) in page.calls
+    assert (
+        "wait_for_selector",
+        selectors.CARD_CONFIRMATION,
+        {"state": "visible"},
+    ) in page.calls
 
 
 def test_account_page_fills_and_submits_banking_form() -> None:
@@ -88,6 +96,7 @@ def test_account_page_fills_and_submits_payment_form() -> None:
 
     AccountPage(page).update_payment(fake_payment_method())
 
-    assert ("fill", selectors.CARDHOLDER_NAME_INPUT, _PAYMENT.cardholder_name) in page.calls  # noqa: E501
+    cardholder = _PAYMENT.cardholder_name
+    assert ("fill", selectors.CARDHOLDER_NAME_INPUT, cardholder) in page.calls
     assert ("fill", selectors.CARD_NUMBER_INPUT, _PAYMENT.card_number) in page.calls
     assert ("click", selectors.CARD_SAVE_BUTTON) in page.calls

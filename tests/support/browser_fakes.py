@@ -20,6 +20,9 @@ class FakePage:
     def wait_for_load_state(self, state: str) -> None:
         self.calls.append(("wait_for_load_state", state))
 
+    def wait_for_selector(self, selector: str, **kwargs: Any) -> None:
+        self.calls.append(("wait_for_selector", selector, kwargs))
+
     def text_content(self, selector: str) -> str | None:
         self.calls.append(("text_content", selector))
         return self.text_by_selector.get(selector)

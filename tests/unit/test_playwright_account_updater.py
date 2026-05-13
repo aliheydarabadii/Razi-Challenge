@@ -122,7 +122,7 @@ def test_execute_calls_page_objects_in_order() -> None:
         ("fill", selectors.BANK_ROUTING_INPUT, "123456789"),
         ("fill", selectors.BANK_ACCOUNT_INPUT, "1234567890"),
         ("click", selectors.BANK_SAVE_BUTTON),
-        ("wait_for_load_state", "networkidle"),
+        ("wait_for_selector", selectors.BANK_CONFIRMATION, {"state": "visible"}),
         ("text_content", selectors.BANK_CONFIRMATION),
         ("fill", selectors.CARDHOLDER_NAME_INPUT, _PAYMENT.cardholder_name),
         ("fill", selectors.CARD_NUMBER_INPUT, _PAYMENT.card_number),
@@ -130,7 +130,7 @@ def test_execute_calls_page_objects_in_order() -> None:
         ("fill", selectors.CARD_EXPIRY_YEAR_INPUT, _PAYMENT.expiry_year),
         ("fill", selectors.CARD_CVC_INPUT, _PAYMENT.cvc),
         ("click", selectors.CARD_SAVE_BUTTON),
-        ("wait_for_load_state", "networkidle"),
+        ("wait_for_selector", selectors.CARD_CONFIRMATION, {"state": "visible"}),
         ("text_content", selectors.CARD_CONFIRMATION),
     ]
     assert result == AccountUpdateResult(
