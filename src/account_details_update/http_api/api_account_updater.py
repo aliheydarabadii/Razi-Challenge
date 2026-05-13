@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+
 from ..banking_details import BankingDetails
 from ..payment_method import PaymentMethod
 from ..ports import AccountUpdateResult
@@ -19,15 +21,26 @@ from .schemas.payment import PaymentUpdateResponse
 _MFA_ROUTING_RETRIES = 10
 
 
+@dataclass(slots=True)
 class ApiAccountUpdater:
     """API adapter that implements AccountUpdatePort via the Razi REST API."""
 
-    def __init__(self, client: RaziApiClient) -> None:
-        self.client = client
-        self._login_called = False
-        self._bearer_token: str | None = None
-        self._banking_confirmation: BankingUpdateResponse | None = None
-        self._payment_confirmation: PaymentUpdateResponse | None = None
+    # ── Constructor parameter ─────────────────────────────────────────────────
+
+    client: RaziApiClient
+
+    # ── Runtime state ─────────────────────────────────────────────────────────
+
+    _login_called: bool = field(default=False, init=False)
+    _bearer_token: str | None = field(default=None, init=False)
+    _banking_confirmation: BankingUpdateResponse | None = field(
+        default=None, init=False
+    )
+    _payment_confirmation: PaymentUpdateResponse | None = field(
+        default=None, init=False
+    )
+
+    # ── AccountUpdatePort ─────────────────────────────────────────────────────
 
     def login(self) -> None:
         self._login_called = True
@@ -46,17 +59,13 @@ class ApiAccountUpdater:
         raise AssertionError("unreachable")
 
     def update_banking_details(self, banking_details: BankingDetails) -> None:
-        if self._bearer_token is None:
-            raise RaziApiError("complete_mfa() must be called before updating details.")
         self._banking_confirmation = self.client.update_banking(
-            self._bearer_token, banking_details
+            self._require_authenticated(), banking_details
         )
 
     def update_payment_method(self, payment_method: PaymentMethod) -> None:
-        if self._bearer_token is None:
-            raise RaziApiError("complete_mfa() must be called before updating details.")
         self._payment_confirmation = self.client.update_payment(
-            self._bearer_token, payment_method
+            self._require_authenticated(), payment_method
         )
 
     def verify_updates(self) -> AccountUpdateResult:
@@ -75,3 +84,10 @@ class ApiAccountUpdater:
                 f"({payment.exp_month}/{payment.exp_year})"
             ),
         )
+
+    # ── Private helpers ───────────────────────────────────────────────────────
+
+    def _require_authenticated(self) -> str:
+        if self._bearer_token is None:
+            raise RaziApiError("complete_mfa() must be called before updating details.")
+        return self._bearer_token
