@@ -102,10 +102,10 @@ def test_main_browser_prints_summary_and_returns_zero(capsys) -> None:  # type: 
     with (
         patch(f"{_CLI}.load_settings", return_value=_test_settings()),
         patch(f"{_CLI}.PlaywrightAccountUpdater") as MockUpdater,
-        patch(f"{_CLI}.UpdateAccountDetails") as MockUseCase,
+        patch(f"{_CLI}.UpdateAccountDetailsHandler") as MockUseCase,
     ):
         _mock_updater_cm(MockUpdater)
-        MockUseCase.return_value.execute.return_value = _MOCK_RESULT
+        MockUseCase.return_value.handle.return_value = _MOCK_RESULT
         code = main(["browser"])
 
     assert code == 0
@@ -131,10 +131,10 @@ def test_main_browser_returns_one_on_browser_page_error(capsys) -> None:  # type
     with (
         patch(f"{_CLI}.load_settings", return_value=_test_settings()),
         patch(f"{_CLI}.PlaywrightAccountUpdater") as MockUpdater,
-        patch(f"{_CLI}.UpdateAccountDetails") as MockUseCase,
+        patch(f"{_CLI}.UpdateAccountDetailsHandler") as MockUseCase,
     ):
         _mock_updater_cm(MockUpdater)
-        MockUseCase.return_value.execute.side_effect = BrowserPageError("not found")
+        MockUseCase.return_value.handle.side_effect = BrowserPageError("not found")
         code = main(["browser"])
 
     assert code == 1
@@ -148,10 +148,10 @@ def test_main_api_prints_summary_and_returns_zero(capsys) -> None:  # type: igno
     with (
         patch(f"{_CLI}.load_settings", return_value=_test_settings()),
         patch(f"{_CLI}.RaziApiClient") as MockClient,
-        patch(f"{_CLI}.UpdateAccountDetails") as MockUseCase,
+        patch(f"{_CLI}.UpdateAccountDetailsHandler") as MockUseCase,
     ):
         _mock_updater_cm(MockClient)
-        MockUseCase.return_value.execute.return_value = _MOCK_RESULT
+        MockUseCase.return_value.handle.return_value = _MOCK_RESULT
         code = main(["api"])
 
     assert code == 0
@@ -175,10 +175,10 @@ def test_main_api_returns_one_on_api_error(capsys) -> None:  # type: ignore[no-u
     with (
         patch(f"{_CLI}.load_settings", return_value=_test_settings()),
         patch(f"{_CLI}.RaziApiClient") as MockClient,
-        patch(f"{_CLI}.UpdateAccountDetails") as MockUseCase,
+        patch(f"{_CLI}.UpdateAccountDetailsHandler") as MockUseCase,
     ):
         _mock_updater_cm(MockClient)
-        MockUseCase.return_value.execute.side_effect = RaziApiError("refused")
+        MockUseCase.return_value.handle.side_effect = RaziApiError("refused")
         code = main(["api"])
 
     assert code == 1

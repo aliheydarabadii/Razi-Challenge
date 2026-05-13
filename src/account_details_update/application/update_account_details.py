@@ -1,21 +1,19 @@
-"""Use case: update a user's banking details and payment method."""
+"""Command handler: update a user's banking details and payment method."""
 
 from __future__ import annotations
 
-from ..banking_details import BankingDetails
-from ..payment_method import PaymentMethod
 from ..ports import AccountUpdatePort, AccountUpdateResult
+from .commands import UpdateAccountDetailsCommand
 
 
-class UpdateAccountDetails:
-    """Application-layer entry point for the account update workflow."""
+class UpdateAccountDetailsHandler:
+    """Processes UpdateAccountDetailsCommand via the injected port."""
 
-    def __init__(self, account_update_port: AccountUpdatePort) -> None:
-        self._port = account_update_port
+    def __init__(self, port: AccountUpdatePort) -> None:
+        self._port = port
 
-    def execute(
-        self,
-        banking_details: BankingDetails,
-        payment_method: PaymentMethod,
-    ) -> AccountUpdateResult:
-        return self._port.execute(banking_details, payment_method)
+    def handle(self, command: UpdateAccountDetailsCommand) -> AccountUpdateResult:
+        return self._port.execute(
+            command.banking_details,
+            command.payment_method,
+        )

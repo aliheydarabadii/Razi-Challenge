@@ -5,7 +5,8 @@ from __future__ import annotations
 import argparse
 import sys
 
-from ..application.update_account_details import UpdateAccountDetails
+from ..application.commands import UpdateAccountDetailsCommand
+from ..application.update_account_details import UpdateAccountDetailsHandler
 from ..banking_details import BankingDetails
 from ..browser.errors import BrowserPageError
 from ..browser.playwright_account_updater import PlaywrightAccountUpdater
@@ -41,8 +42,11 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _execute(command: str, settings: Settings) -> AccountUpdateResult:
-    """Build the adapter for *command*, run the use case, return the result."""
-    banking_details, payment_method = _build_domain_objects(settings)
+    """Build the adapter for *command*, run the handler, return the result."""
+    cmd = UpdateAccountDetailsCommand(
+        banking_details=_build_banking_details(settings),
+        payment_method=_build_payment_method(settings),
+    )
 
     if command == "browser":
         with PlaywrightAccountUpdater(
@@ -53,10 +57,7 @@ def _execute(command: str, settings: Settings) -> AccountUpdateResult:
             headed=settings.headed,
             slow_mo_ms=settings.slow_mo_ms,
         ) as updater:
-            return UpdateAccountDetails(account_update_port=updater).execute(
-                banking_details=banking_details,
-                payment_method=payment_method,
-            )
+            return UpdateAccountDetailsHandler(port=updater).handle(cmd)
 
     with RaziApiClient(
         base_url=settings.api_base_url,
@@ -64,28 +65,30 @@ def _execute(command: str, settings: Settings) -> AccountUpdateResult:
         password=settings.password.get_secret_value(),
         mfa_code=settings.mfa_code.get_secret_value(),
     ) as client:
-        return UpdateAccountDetails(
-            account_update_port=ApiAccountUpdater(client=client)
-        ).execute(
-            banking_details=banking_details,
-            payment_method=payment_method,
-        )
+        return UpdateAccountDetailsHandler(
+            port=ApiAccountUpdater(client=client)
+        ).handle(cmd)
+
+
+def _build_banking_details(settings: Settings) -> BankingDetails:
+    return BankingDetails(
+        routing_number=settings.bank_routing,
+        account_number=settings.bank_account,
+    )
+
+
+def _build_payment_method(settings: Settings) -> PaymentMethod:
+    return PaymentMethod(
+        cardholder_name=settings.cardholder_name,
+        card_number=settings.card_number,
+        expiry_month=settings.card_expiry_month,
+        expiry_year=settings.card_expiry_year,
+        cvc=settings.card_cvc,
+    )
 
 
 def _build_domain_objects(settings: Settings) -> tuple[BankingDetails, PaymentMethod]:
-    return (
-        BankingDetails(
-            routing_number=settings.bank_routing,
-            account_number=settings.bank_account,
-        ),
-        PaymentMethod(
-            cardholder_name=settings.cardholder_name,
-            card_number=settings.card_number,
-            expiry_month=settings.card_expiry_month,
-            expiry_year=settings.card_expiry_year,
-            cvc=settings.card_cvc,
-        ),
-    )
+    return _build_banking_details(settings), _build_payment_method(settings)
 
 
 def build_parser() -> argparse.ArgumentParser:

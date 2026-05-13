@@ -11,8 +11,9 @@ from __future__ import annotations
 
 import pytest
 
+from account_details_update.application.commands import UpdateAccountDetailsCommand
 from account_details_update.application.update_account_details import (
-    UpdateAccountDetails,
+    UpdateAccountDetailsHandler,
 )
 from account_details_update.banking_details import BankingDetails
 from account_details_update.bootstrap.settings import Settings
@@ -125,15 +126,18 @@ def test_full_api_flow_via_use_case(settings: Settings) -> None:
         expiry_year=settings.card_expiry_year,
         cvc=settings.card_cvc,
     )
+    command = UpdateAccountDetailsCommand(
+        banking_details=banking, payment_method=payment
+    )
     with RaziApiClient(
         base_url=settings.api_base_url,
         username=settings.username,
         password=settings.password.get_secret_value(),
         mfa_code=settings.mfa_code.get_secret_value(),
     ) as c:
-        result = UpdateAccountDetails(
-            account_update_port=ApiAccountUpdater(client=c)
-        ).execute(banking, payment)
+        result = UpdateAccountDetailsHandler(
+            port=ApiAccountUpdater(client=c)
+        ).handle(command)
 
     assert settings.bank_routing[-4:] in result.banking_summary
     assert settings.bank_account[-4:] in result.banking_summary

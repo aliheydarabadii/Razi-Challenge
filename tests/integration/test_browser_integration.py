@@ -15,8 +15,9 @@ from __future__ import annotations
 
 import pytest
 
+from account_details_update.application.commands import UpdateAccountDetailsCommand
 from account_details_update.application.update_account_details import (
-    UpdateAccountDetails,
+    UpdateAccountDetailsHandler,
 )
 from account_details_update.banking_details import BankingDetails
 from account_details_update.bootstrap.settings import Settings
@@ -38,29 +39,29 @@ def test_full_browser_flow(settings: Settings) -> None:
         reason="playwright not installed — run `playwright install chromium` first",
     )
 
-    banking = BankingDetails(
-        routing_number=settings.bank_routing,
-        account_number=settings.bank_account,
-    )
-    payment = PaymentMethod(
-        cardholder_name=settings.cardholder_name,
-        card_number=settings.card_number,
-        expiry_month=settings.card_expiry_month,
-        expiry_year=settings.card_expiry_year,
-        cvc=settings.card_cvc,
+    command = UpdateAccountDetailsCommand(
+        banking_details=BankingDetails(
+            routing_number=settings.bank_routing,
+            account_number=settings.bank_account,
+        ),
+        payment_method=PaymentMethod(
+            cardholder_name=settings.cardholder_name,
+            card_number=settings.card_number,
+            expiry_month=settings.card_expiry_month,
+            expiry_year=settings.card_expiry_year,
+            cvc=settings.card_cvc,
+        ),
     )
 
     with PlaywrightAccountUpdater(
         base_url=settings.challenge_base_url,
         username=settings.username,
-        password=settings.password,
-        mfa_code=settings.mfa_code,
+        password=settings.password.get_secret_value(),
+        mfa_code=settings.mfa_code.get_secret_value(),
         headed=settings.headed,
         slow_mo_ms=settings.slow_mo_ms,
     ) as updater:
-        result = UpdateAccountDetails(account_update_port=updater).execute(
-            banking, payment
-        )
+        result = UpdateAccountDetailsHandler(port=updater).handle(command)
 
     assert result.banking_summary, "expected a non-empty banking confirmation"
     assert result.payment_summary, "expected a non-empty payment confirmation"

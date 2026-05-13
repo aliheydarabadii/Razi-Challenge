@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from account_details_update.application.commands import UpdateAccountDetailsCommand
 from account_details_update.application.update_account_details import (
-    UpdateAccountDetails,
+    UpdateAccountDetailsHandler,
 )
 from account_details_update.banking_details import BankingDetails
 from account_details_update.payment_method import PaymentMethod
@@ -28,9 +29,9 @@ class FakeAccountUpdatePort:
         )
 
 
-def test_execute_delegates_to_port() -> None:
+def test_handle_delegates_command_to_port() -> None:
     port = FakeAccountUpdatePort()
-    use_case = UpdateAccountDetails(account_update_port=port)
+    handler = UpdateAccountDetailsHandler(port=port)
     banking = BankingDetails(routing_number="123456789", account_number="1234567890")
     payment = PaymentMethod(
         cardholder_name="Test Candidate",
@@ -39,8 +40,12 @@ def test_execute_delegates_to_port() -> None:
         expiry_year="2035",
         cvc="123",
     )
+    command = UpdateAccountDetailsCommand(
+        banking_details=banking,
+        payment_method=payment,
+    )
 
-    result = use_case.execute(banking_details=banking, payment_method=payment)
+    result = handler.handle(command)
 
     assert port.called
     assert port.received_banking is banking
