@@ -57,7 +57,8 @@ class BrowserSession:
     # ── Private helpers ───────────────────────────────────────────────────────
 
     def _start(self) -> None:
-        self._playwright = self._resolve_factory()().start()
+        factory = self._resolve_factory()
+        self._playwright = factory().start()
         try:
             self._browser = self._playwright.chromium.launch(
                 headless=not self.headed,

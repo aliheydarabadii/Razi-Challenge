@@ -75,7 +75,7 @@ class RaziApiClient:
     _http: httpx.Client = field(init=False)
     _retry_policy: Retrying = field(init=False)
 
-    # ── AccountUpdatePort ─────────────────────────────────────────────────────
+    # ── Public API ───────────────────────────────────────────────────────────
 
     def request_token(self) -> TokenResponse:
         """Step 1 of auth — POST /auth/token."""

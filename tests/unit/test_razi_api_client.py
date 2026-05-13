@@ -294,7 +294,7 @@ def test_owned_http_client_is_closed_on_exit() -> None:
     mock_http.close.assert_called_once()
 
 
-# ── _raise_for_status edge cases ──────────────────────────────────────────────
+# ── error response parsing ────────────────────────────────────────────────────
 
 
 def test_raise_for_status_handles_non_dict_json_body() -> None:

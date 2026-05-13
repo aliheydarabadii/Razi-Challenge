@@ -13,8 +13,8 @@ from .pages.login_page import LoginPage
 from .pages.mfa_page import MfaPage
 from .session import BrowserSession
 
-DEFAULT_LOGIN_PATH = "/login"
-DEFAULT_ACCOUNT_PATH = "/app/account"
+_DEFAULT_LOGIN_PATH = "/login"
+_DEFAULT_ACCOUNT_PATH = "/app/account"
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,7 +43,7 @@ class PlaywrightAccountUpdater:
     # ── Private helpers ───────────────────────────────────────────────────────
 
     def _authenticate(self) -> None:
-        url = self.login_url or _join_url(self.base_url, DEFAULT_LOGIN_PATH)
+        url = self.login_url or _join_url(self.base_url, _DEFAULT_LOGIN_PATH)
         login = LoginPage(self.session.page)
         login.open(url)
         login.login(self.username, self.password)
@@ -54,7 +54,7 @@ class PlaywrightAccountUpdater:
         banking_details: BankingDetails,
         payment_method: PaymentMethod,
     ) -> AccountUpdateResult:
-        url = self.account_url or _join_url(self.base_url, DEFAULT_ACCOUNT_PATH)
+        url = self.account_url or _join_url(self.base_url, _DEFAULT_ACCOUNT_PATH)
         account = AccountPage(self.session.page)
         account.open(url)
         account.update_banking(banking_details)

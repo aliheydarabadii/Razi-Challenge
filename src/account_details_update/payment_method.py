@@ -52,7 +52,8 @@ class PaymentMethod:
             raise ValueError("expiry_month must be 1 to 12")
         if not self.expiry_year.isdigit() or len(self.expiry_year) != 4:
             raise ValueError("expiry_year must be a 4 digit year")
-        if (int(self.expiry_year), month) < (date.today().year, date.today().month):
+        today = date.today()
+        if (int(self.expiry_year), month) < (today.year, today.month):
             raise ValueError("card has already expired")
 
 
