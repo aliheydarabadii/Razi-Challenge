@@ -38,6 +38,10 @@ HEADED=true SLOW_MO_MS=500 uv run account-details-update browser
 
 Pre-commit hooks run `ruff check --fix`, `ruff format`, and `mypy src` automatically on commit.
 
+## Git commits
+
+Do not add `Co-Authored-By` trailers to commit messages.
+
 ## Architecture
 
 Hexagonal (ports & adapters) with CQRS. The domain knows nothing about Playwright or HTTP.
