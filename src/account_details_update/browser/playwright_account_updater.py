@@ -78,13 +78,8 @@ class PlaywrightAccountUpdater:
         payment_method: PaymentMethod,
     ) -> AccountUpdateResult:
         self._ensure_page()
-        self.login_page.open(self.login_url)
-        self.login_page.login(self.username, self.password)
-        self.mfa_page.verify(self.mfa_code)
-        self.account_page.open(self.account_url)
-        self.account_page.update_banking(banking_details)
-        self.account_page.update_payment(payment_method)
-        return self.account_page.verify_updates()
+        self._authenticate()
+        return self._perform_updates(banking_details, payment_method)
 
     def close(self) -> None:
         """Close Playwright resources owned by this adapter."""
@@ -103,27 +98,27 @@ class PlaywrightAccountUpdater:
 
     # ── Private helpers ───────────────────────────────────────────────────────
 
-    def _bind_page_objects(self, page: Any | None) -> None:
-        self.login_page = LoginPage(page)
-        self.mfa_page = MfaPage(page)
-        self.account_page = AccountPage(page)
+    def _authenticate(self) -> None:
+        self.login_page.open(self.login_url)
+        self.login_page.login(self.username, self.password)
+        self.mfa_page.verify(self.mfa_code)
 
-    def _ensure_page(self) -> Any:
-        if self.page is not None:
-            return self.page
+    def _perform_updates(
+        self,
+        banking_details: BankingDetails,
+        payment_method: PaymentMethod,
+    ) -> AccountUpdateResult:
+        self.account_page.open(self.account_url)
+        self.account_page.update_banking(banking_details)
+        self.account_page.update_payment(payment_method)
+        return self.account_page.verify_updates()
 
-        playwright_factory = self._playwright_factory
-        if playwright_factory is None:
-            try:
-                from playwright.sync_api import sync_playwright
-            except ImportError as exc:
-                raise RuntimeError(
-                    "Playwright is required for browser automation. Install project "
-                    "dependencies and run `playwright install chromium`."
-                ) from exc
-            playwright_factory = sync_playwright
+    def _ensure_page(self) -> None:
+        if self.page is None:
+            self._start_browser()
 
-        self._playwright = playwright_factory().start()
+    def _start_browser(self) -> None:
+        self._playwright = self._resolve_factory()().start()
         try:
             self._browser = self._playwright.chromium.launch(
                 headless=not self.headed,
@@ -135,9 +130,24 @@ class PlaywrightAccountUpdater:
         except Exception:
             self.close()
             raise
-
         self._bind_page_objects(self.page)
-        return self.page
+
+    def _resolve_factory(self) -> Callable[[], Any]:
+        if self._playwright_factory is not None:
+            return self._playwright_factory
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError as exc:
+            raise RuntimeError(
+                "Playwright is required for browser automation. Install project "
+                "dependencies and run `playwright install chromium`."
+            ) from exc
+        return sync_playwright
+
+    def _bind_page_objects(self, page: Any | None) -> None:
+        self.login_page = LoginPage(page)
+        self.mfa_page = MfaPage(page)
+        self.account_page = AccountPage(page)
 
 
 def _join_url(base_url: str, path: str) -> str:
