@@ -4,7 +4,6 @@ from account_details_update.browser import selectors
 from account_details_update.browser.pages.account_page import AccountPage
 from account_details_update.browser.pages.login_page import LoginPage
 from account_details_update.browser.pages.mfa_page import MfaPage
-from account_details_update.ports import AccountUpdateResult
 from tests.support.browser_fakes import FakePage
 from tests.support.fake_data import fake_banking_details, fake_payment_method
 
@@ -44,42 +43,51 @@ def test_mfa_page_submits_code() -> None:
     ]
 
 
-def test_account_page_updates_details_and_returns_scraped_confirmation() -> None:
+_BANK_CONFIRMATION_TEXT = "Banking details updated successfully."
+_CARD_CONFIRMATION_TEXT = "Payment method updated successfully."
+
+
+def test_account_page_update_banking_returns_confirmation() -> None:
     page = FakePage(
-        text_by_selector={
-            selectors.BANK_CONFIRMATION: "Banking details updated successfully.",
-            selectors.CARD_CONFIRMATION: "Payment method updated successfully.",
-        }
+        text_by_selector={selectors.BANK_CONFIRMATION: _BANK_CONFIRMATION_TEXT}
     )
-    account_page = AccountPage(page)
 
-    account_page.open("https://marketplace.dev-challenge.com/app/account")
-    account_page.update_banking(fake_banking_details())
-    account_page.update_payment(fake_payment_method())
-    result = account_page.verify_updates()
+    summary = AccountPage(page).update_banking(fake_banking_details())
 
-    assert page.calls == [
-        (
-            "goto",
-            "https://marketplace.dev-challenge.com/app/account",
-            {"wait_until": "domcontentloaded"},
-        ),
-        ("wait_for_load_state", "networkidle"),
-        ("fill", selectors.BANK_ROUTING_INPUT, "123456789"),
-        ("fill", selectors.BANK_ACCOUNT_INPUT, "1234567890"),
-        ("click", selectors.BANK_SAVE_BUTTON),
-        ("wait_for_load_state", "networkidle"),
-        ("fill", selectors.CARDHOLDER_NAME_INPUT, _PAYMENT.cardholder_name),
-        ("fill", selectors.CARD_NUMBER_INPUT, _PAYMENT.card_number),
-        ("fill", selectors.CARD_EXPIRY_MONTH_INPUT, _PAYMENT.expiry_month),
-        ("fill", selectors.CARD_EXPIRY_YEAR_INPUT, _PAYMENT.expiry_year),
-        ("fill", selectors.CARD_CVC_INPUT, _PAYMENT.cvc),
-        ("click", selectors.CARD_SAVE_BUTTON),
-        ("wait_for_load_state", "networkidle"),
-        ("text_content", selectors.BANK_CONFIRMATION),
-        ("text_content", selectors.CARD_CONFIRMATION),
-    ]
-    assert result == AccountUpdateResult(
-        banking_summary="Banking details updated successfully.",
-        payment_summary="Payment method updated successfully.",
+    assert summary == _BANK_CONFIRMATION_TEXT
+    assert ("text_content", selectors.BANK_CONFIRMATION) in page.calls
+
+
+def test_account_page_update_payment_returns_confirmation() -> None:
+    page = FakePage(
+        text_by_selector={selectors.CARD_CONFIRMATION: _CARD_CONFIRMATION_TEXT}
     )
+
+    summary = AccountPage(page).update_payment(fake_payment_method())
+
+    assert summary == _CARD_CONFIRMATION_TEXT
+    assert ("text_content", selectors.CARD_CONFIRMATION) in page.calls
+
+
+def test_account_page_fills_and_submits_banking_form() -> None:
+    page = FakePage(
+        text_by_selector={selectors.BANK_CONFIRMATION: _BANK_CONFIRMATION_TEXT}
+    )
+
+    AccountPage(page).update_banking(fake_banking_details())
+
+    assert ("fill", selectors.BANK_ROUTING_INPUT, "123456789") in page.calls
+    assert ("fill", selectors.BANK_ACCOUNT_INPUT, "1234567890") in page.calls
+    assert ("click", selectors.BANK_SAVE_BUTTON) in page.calls
+
+
+def test_account_page_fills_and_submits_payment_form() -> None:
+    page = FakePage(
+        text_by_selector={selectors.CARD_CONFIRMATION: _CARD_CONFIRMATION_TEXT}
+    )
+
+    AccountPage(page).update_payment(fake_payment_method())
+
+    assert ("fill", selectors.CARDHOLDER_NAME_INPUT, _PAYMENT.cardholder_name) in page.calls  # noqa: E501
+    assert ("fill", selectors.CARD_NUMBER_INPUT, _PAYMENT.card_number) in page.calls
+    assert ("click", selectors.CARD_SAVE_BUTTON) in page.calls

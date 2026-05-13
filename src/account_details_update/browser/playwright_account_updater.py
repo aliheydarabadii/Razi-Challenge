@@ -57,9 +57,12 @@ class PlaywrightAccountUpdater:
         url = self.account_url or _join_url(self.base_url, _DEFAULT_ACCOUNT_PATH)
         account = AccountPage(self.session.page)
         account.open(url)
-        account.update_banking(banking_details)
-        account.update_payment(payment_method)
-        return account.verify_updates()
+        banking_summary = account.update_banking(banking_details)
+        payment_summary = account.update_payment(payment_method)
+        return AccountUpdateResult(
+            banking_summary=banking_summary,
+            payment_summary=payment_summary,
+        )
 
     # ── Protocol / initialisation (boilerplate) ───────────────────────────────
 
