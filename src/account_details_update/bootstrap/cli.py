@@ -63,8 +63,6 @@ def _execute(command: str, settings: Settings) -> AccountUpdateResult:
         username=settings.username,
         password=settings.password.get_secret_value(),
         mfa_code=settings.mfa_code.get_secret_value(),
-        anon_key=settings.supabase_anon_key.get_secret_value(),
-        supabase_url=settings.supabase_url,
     ) as client:
         return UpdateAccountDetails(
             account_update_port=ApiAccountUpdater(client=client)

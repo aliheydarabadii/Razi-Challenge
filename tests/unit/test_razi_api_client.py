@@ -40,8 +40,6 @@ def _make_client(
     post_response: httpx.Response | None = None,
     put_response: httpx.Response | None = None,
     *,
-    anon_key: str = "",
-    supabase_url: str = "",
     retrying: Retrying = _NO_RETRY,
 ) -> tuple[RaziApiClient, MagicMock]:
     http = MagicMock(spec=httpx.Client)
@@ -54,8 +52,6 @@ def _make_client(
         username="candidate@dev-challenge.com",
         password="Password123!",
         mfa_code="1234",
-        anon_key=anon_key,
-        supabase_url=supabase_url,
         _http_client=http,
         _retrying=retrying,
     )
@@ -100,47 +96,7 @@ def test_request_token_raises_rate_limit_error_on_429() -> None:
         client.request_token()
 
 
-# ── native auth path ─────────────────────────────────────────────────────────
-
-
-def test_request_token_uses_native_supabase_auth_when_anon_key_set() -> None:
-    response = httpx.Response(
-        200, json={"access_token": "native_jwt", "token_type": "Bearer"}
-    )
-    client, http = _make_client(
-        post_response=response,
-        anon_key="anon_key_value",
-        supabase_url="https://proj.supabase.co",
-    )
-
-    token = client.request_token()
-
-    http.post.assert_called_once_with(
-        "https://proj.supabase.co/auth/v1/token?grant_type=password",
-        json={"email": "candidate@dev-challenge.com", "password": "Password123!"},
-        headers={"apikey": "anon_key_value"},
-    )
-    assert token.mfa_required is False
-
-
-def test_verify_mfa_returns_cached_native_token_without_http_call() -> None:
-    response = httpx.Response(
-        200, json={"access_token": "native_jwt", "token_type": "Bearer"}
-    )
-    client, http = _make_client(
-        post_response=response,
-        anon_key="anon_key_value",
-        supabase_url="https://proj.supabase.co",
-    )
-    token_response = client.request_token()
-
-    bearer = client.verify_mfa(token_response)
-
-    assert bearer == "native_jwt"
-    assert http.post.call_count == 1  # only request_token, no second post
-
-
-# ── verify_mfa (custom flow) ──────────────────────────────────────────────────
+# ── verify_mfa ────────────────────────────────────────────────────────────────
 
 
 def test_verify_mfa_posts_token_and_code_returns_bearer_token() -> None:

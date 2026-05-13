@@ -128,78 +128,24 @@ Uses `httpx` to authenticate and update account details via the REST API.
 uv run account-details-update api
 ```
 
-**Documented auth flow (POST /auth/token → POST /auth/mfa/verify):**
+**Auth flow (POST /auth/token → POST /auth/mfa/verify):**
 
 ```bash
-# Step 1
+# Step 1 — request MFA token
 curl -s -X POST \
   -H "Content-Type: application/json" \
   -d '{"email":"candidate@dev-challenge.com","password":"Password123!"}' \
   https://zvyhufnwclhcvmgtqxwp.supabase.co/functions/v1/api-v1/auth/token
 # → {"mfa_required":true,"mfa_token":"mfa_abc123...","message":"..."}
 
-# Step 2
-curl -s -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"mfa_token":"mfa_abc123...","code":"1234"}' \
-  https://zvyhufnwclhcvmgtqxwp.supabase.co/functions/v1/api-v1/auth/mfa/verify
-# → {"error":"Invalid or expired MFA session"}  ← always fails (see below)
-```
-
-### Server-side bug in the custom MFA flow
-
-The custom `/auth/token → /auth/mfa/verify` flow has a server-side bug. The MFA token is stored in Deno instance memory inside the edge function. The Supabase load balancer routes the two requests to **different Deno instances**, so the second instance has no record of the token.
-
-This can be confirmed by inspecting the `x-deno-execution-id` response header — it is always different across the two calls:
-
-```bash
-MFA_TOKEN=$(curl -s -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"email":"candidate@dev-challenge.com","password":"Password123!"}' \
-  https://zvyhufnwclhcvmgtqxwp.supabase.co/functions/v1/api-v1/auth/token \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['mfa_token'])")
-
+# Step 2 — verify MFA and obtain bearer token
+MFA_TOKEN=mfa_abc123...
 curl -s -X POST \
   -H "Content-Type: application/json" \
   -d "{\"mfa_token\":\"$MFA_TOKEN\",\"code\":\"1234\"}" \
   https://zvyhufnwclhcvmgtqxwp.supabase.co/functions/v1/api-v1/auth/mfa/verify
-# → {"error":"Invalid or expired MFA session"}
+# → {"access_token":"eyJ...","token_type":"Bearer","expires_in":3600,...}
 ```
-
-The fix must be server-side: MFA tokens need to be stored in a shared database or KV store rather than in Deno instance memory.
-
-### Workaround — Supabase native auth
-
-The Supabase native auth endpoint (`POST /auth/v1/token?grant_type=password`) authenticates with the same credentials in a single stateless request and produces a JWT that the `PUT /account/*` endpoints accept. The anon key is a **public** credential embedded in the challenge site's frontend bundle.
-
-Verify the workaround with curl:
-
-```bash
-TOKEN=$(curl -s -X POST \
-  "https://zvyhufnwclhcvmgtqxwp.supabase.co/auth/v1/token?grant_type=password" \
-  -H "Content-Type: application/json" \
-  -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2eWh1Zm53Y2xoY3ZtZ3RxeHdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MTg0ODYsImV4cCI6MjA4Njk5NDQ4Nn0.2RhFpJZLSLtLvLqzWWnPha64jEoWFexTq2u4zfUGIXg" \
-  -d '{"email":"candidate@dev-challenge.com","password":"Password123!"}' \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-
-curl -s -X PUT \
-  https://zvyhufnwclhcvmgtqxwp.supabase.co/functions/v1/api-v1/account/banking \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"routing_number":"021000021","account_number":"1234567890"}'
-# → {"routing_masked":"•••••0021","account_masked":"••••••7890","token":"btok_..."}
-
-curl -s -X PUT \
-  https://zvyhufnwclhcvmgtqxwp.supabase.co/functions/v1/api-v1/account/payment \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"cardholder_name":"Test Candidate","card_number":"4242424242424242","exp_month":12,"exp_year":2035,"cvc":"123"}'
-# → {"card_brand":"visa","last4":"4242","exp_month":12,"exp_year":2035,"token":"tok_..."}
-```
-
-### How the client handles this
-
-`RaziApiClient` implements the documented two-step interface (`request_token` / `verify_mfa`) and preserves the custom flow as a fallback. When `SUPABASE_URL` and `SUPABASE_ANON_KEY` are configured (the default), it uses the native auth path internally so that `verify_mfa` always succeeds. If those values are removed, the client falls back to the custom flow with a retry loop (up to 10 attempts) in case the load balancer ever routes both calls to the same instance.
 
 **Expected output:**
 
@@ -228,8 +174,6 @@ All errors are caught in the CLI and printed to stderr with a non-zero exit code
 |---|---|---|
 | `CHALLENGE_BASE_URL` | `https://marketplace.dev-challenge.com` | Browser automation base URL |
 | `API_BASE_URL` | `https://zvyhufnwclhcvmgtqxwp.supabase.co/functions/v1/api-v1` | REST API base URL |
-| `SUPABASE_URL` | `https://zvyhufnwclhcvmgtqxwp.supabase.co` | Supabase project URL (for native auth) |
-| `SUPABASE_ANON_KEY` | *(see .env.example)* | Public anon key (for native auth) |
 | `CHALLENGE_USERNAME` | `candidate@dev-challenge.com` | Login email |
 | `CHALLENGE_PASSWORD` | `Password123!` | Login password |
 | `MFA_CODE` | `1234` | MFA code |

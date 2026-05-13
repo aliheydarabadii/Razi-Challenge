@@ -57,15 +57,11 @@ def _default_retrying() -> Retrying:
 class RaziApiClient:
     """HTTP client for the Razi REST API.
 
-    Authentication note: the custom /auth/token → /auth/mfa/verify flow stores
-    MFA tokens in Deno instance memory. Because the Supabase edge-function load
-    balancer routes the two requests to different instances, verify_mfa always
-    fails. When supabase_url and anon_key are supplied the client transparently
-    uses the Supabase native auth endpoint instead, which works correctly.
+    Auth flow: POST /auth/token → POST /auth/mfa/verify → bearer token.
 
-    Retry behaviour: RateLimitError (429), ServerError (5xx), and network-level
-    httpx.TransportError are retried with exponential backoff up to 5 attempts.
-    Authentication and validation errors are not retried.
+    Retry behaviour: RateLimitError (429), ServerError (5xx), and
+    httpx.TransportError are retried with exponential backoff up to 5
+    attempts. Authentication and validation errors are not retried.
     """
 
     def __init__(
@@ -74,8 +70,6 @@ class RaziApiClient:
         username: str,
         password: str,
         mfa_code: str,
-        anon_key: str = "",
-        supabase_url: str = "",
         timeout: float = _DEFAULT_TIMEOUT,
         _http_client: httpx.Client | None = None,
         _retrying: Retrying | None = None,
@@ -84,11 +78,8 @@ class RaziApiClient:
         self._username = username
         self._password = password
         self._mfa_code = mfa_code
-        self._anon_key = anon_key
-        self._supabase_url = supabase_url.rstrip("/")
         self._owns_http = _http_client is None
         self._http = _http_client or httpx.Client(timeout=timeout)
-        self._native_access_token: str | None = None
         self._retrying = _retrying if _retrying is not None else _default_retrying()
 
     def close(self) -> None:
@@ -108,26 +99,10 @@ class RaziApiClient:
         self.close()
 
     def request_token(self) -> TokenResponse:
-        """Step 1 of auth. Uses native Supabase auth when anon_key is set."""
+        """Step 1 of auth — POST /auth/token."""
 
         def _call() -> TokenResponse:
-            if self._supabase_url and self._anon_key:
-                _logger.info("request_token", auth_method="supabase_native")
-                response = self._http.post(
-                    f"{self._supabase_url}/auth/v1/token?grant_type=password",
-                    json={"email": self._username, "password": self._password},
-                    headers={"apikey": self._anon_key},
-                )
-                self._raise_for_status(response)
-                self._native_access_token = response.json()["access_token"]
-                _logger.info("token_obtained", auth_method="supabase_native")
-                return TokenResponse(
-                    mfa_required=False,
-                    mfa_token="",
-                    message="Authenticated via Supabase native auth.",
-                )
-            # Custom auth flow (broken on this deployment — see class docstring).
-            _logger.info("request_token", auth_method="custom")
+            _logger.info("request_token")
             payload = TokenRequest(email=self._username, password=self._password)
             response = self._http.post(
                 f"{self.base_url}/auth/token",
@@ -135,31 +110,16 @@ class RaziApiClient:
             )
             self._raise_for_status(response)
             result = TokenResponse.model_validate(response.json())
-            _logger.info(
-                "token_obtained",
-                auth_method="custom",
-                mfa_required=result.mfa_required,
-            )
+            _logger.info("token_obtained", mfa_required=result.mfa_required)
             return result
 
         return self._retrying(_call)
 
     def verify_mfa(self, token_response: TokenResponse) -> str:
-        """Step 2 of auth. Returns the bearer access token.
-
-        When the native auth path is active, this consumes the token cached by
-        request_token() and makes no HTTP call. A subsequent call without a
-        preceding request_token() falls through to the custom MFA flow.
-        """
+        """Step 2 of auth — POST /auth/mfa/verify. Returns the bearer token."""
 
         def _call() -> str:
-            if self._native_access_token is not None:
-                _logger.info("verify_mfa", auth_method="supabase_native")
-                token = self._native_access_token
-                self._native_access_token = None
-                _logger.info("mfa_verified", auth_method="supabase_native")
-                return token
-            _logger.info("verify_mfa", auth_method="custom")
+            _logger.info("verify_mfa")
             payload = MfaVerifyRequest(
                 mfa_token=token_response.mfa_token,
                 code=self._mfa_code,
@@ -172,7 +132,7 @@ class RaziApiClient:
             access_token = MfaVerifyResponse.model_validate(
                 response.json()
             ).access_token
-            _logger.info("mfa_verified", auth_method="custom")
+            _logger.info("mfa_verified")
             return access_token
 
         return self._retrying(_call)

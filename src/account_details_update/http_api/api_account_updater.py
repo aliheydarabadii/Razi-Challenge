@@ -7,18 +7,10 @@ from dataclasses import dataclass, field
 from ..banking_details import BankingDetails
 from ..payment_method import PaymentMethod
 from ..ports import AccountUpdateResult
-from .errors import MfaVerificationError, RaziApiError
+from .errors import RaziApiError
 from .razi_api_client import RaziApiClient
 from .schemas.banking import BankingUpdateResponse
 from .schemas.payment import PaymentUpdateResponse
-
-# Number of times to retry the full request_token → verify_mfa cycle when the
-# Supabase load balancer routes the two requests to different Deno instances.
-# This loop is intentionally separate from the per-call tenacity retry in
-# RaziApiClient: tenacity handles transient network/server errors; this loop
-# handles MfaVerificationError, which requires a fresh token rather than a
-# bare retry. Mixing the two would risk amplification (retries × attempts).
-_MFA_ROUTING_RETRIES = 10
 
 
 @dataclass(slots=True)
@@ -48,15 +40,8 @@ class ApiAccountUpdater:
     def complete_mfa(self) -> None:
         if not self._login_called:
             raise RaziApiError("login() must be called before complete_mfa().")
-        for attempt in range(_MFA_ROUTING_RETRIES):
-            token_response = self.client.request_token()
-            try:
-                self._bearer_token = self.client.verify_mfa(token_response)
-                return
-            except MfaVerificationError:
-                if attempt >= _MFA_ROUTING_RETRIES - 1:
-                    raise
-        raise AssertionError("unreachable")
+        token_response = self.client.request_token()
+        self._bearer_token = self.client.verify_mfa(token_response)
 
     def update_banking_details(self, banking_details: BankingDetails) -> None:
         self._banking_confirmation = self.client.update_banking(

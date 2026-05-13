@@ -7,7 +7,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _DEFAULT_CHALLENGE_URL = "https://marketplace.dev-challenge.com"
 _DEFAULT_API_URL = "https://zvyhufnwclhcvmgtqxwp.supabase.co/functions/v1/api-v1"
-_DEFAULT_SUPABASE_URL = "https://zvyhufnwclhcvmgtqxwp.supabase.co"
 
 
 class Settings(BaseSettings):
@@ -25,7 +24,6 @@ class Settings(BaseSettings):
         default=_DEFAULT_CHALLENGE_URL, alias="CHALLENGE_BASE_URL"
     )
     api_base_url: str = Field(default=_DEFAULT_API_URL, alias="API_BASE_URL")
-    supabase_url: str = Field(default=_DEFAULT_SUPABASE_URL, alias="SUPABASE_URL")
 
     # ── Credentials ───────────────────────────────────────────────────────────
 
@@ -36,9 +34,6 @@ class Settings(BaseSettings):
         default=SecretStr("Password123!"), alias="CHALLENGE_PASSWORD"
     )
     mfa_code: SecretStr = Field(default=SecretStr("1234"), alias="MFA_CODE")
-    supabase_anon_key: SecretStr = Field(
-        default=SecretStr(""), alias="SUPABASE_ANON_KEY"
-    )
 
     # ── Browser ───────────────────────────────────────────────────────────────
 
@@ -60,7 +55,7 @@ class Settings(BaseSettings):
 
     # ── Validators ────────────────────────────────────────────────────────────
 
-    @field_validator("challenge_base_url", "api_base_url", "supabase_url")
+    @field_validator("challenge_base_url", "api_base_url")
     @classmethod
     def must_be_http_url(cls, v: str) -> str:
         if v and not v.lower().startswith(("http://", "https://")):

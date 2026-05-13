@@ -32,10 +32,8 @@ def client(settings: Settings) -> RaziApiClient:  # type: ignore[misc]
     with RaziApiClient(
         base_url=settings.api_base_url,
         username=settings.username,
-        password=settings.password,
-        mfa_code=settings.mfa_code,
-        anon_key=settings.supabase_anon_key,
-        supabase_url=settings.supabase_url,
+        password=settings.password.get_secret_value(),
+        mfa_code=settings.mfa_code.get_secret_value(),
     ) as c:
         yield c
 
@@ -68,9 +66,7 @@ def test_wrong_password_raises_authentication_error(settings: Settings) -> None:
         base_url=settings.api_base_url,
         username=settings.username,
         password="wrong-password",
-        mfa_code=settings.mfa_code,
-        anon_key=settings.supabase_anon_key,
-        supabase_url=settings.supabase_url,
+        mfa_code=settings.mfa_code.get_secret_value(),
     ) as bad_client:
         with pytest.raises(AuthenticationError):
             bad_client.request_token()
@@ -132,10 +128,8 @@ def test_full_api_flow_via_use_case(settings: Settings) -> None:
     with RaziApiClient(
         base_url=settings.api_base_url,
         username=settings.username,
-        password=settings.password,
-        mfa_code=settings.mfa_code,
-        anon_key=settings.supabase_anon_key,
-        supabase_url=settings.supabase_url,
+        password=settings.password.get_secret_value(),
+        mfa_code=settings.mfa_code.get_secret_value(),
     ) as c:
         result = UpdateAccountDetails(
             account_update_port=ApiAccountUpdater(client=c)

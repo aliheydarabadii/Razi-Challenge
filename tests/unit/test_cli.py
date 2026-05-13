@@ -29,8 +29,6 @@ def _test_settings(**overrides: object) -> Settings:
         username="u@example.com",
         password=SecretStr("pass"),
         mfa_code=SecretStr("1234"),
-        supabase_url="",
-        supabase_anon_key=SecretStr(""),
         bank_routing="123456789",
         bank_account="1234567890",
         cardholder_name="Test User",
