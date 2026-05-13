@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-import pytest
-
 from account_details_update.browser import selectors
-from account_details_update.browser.errors import BrowserPageError
 from account_details_update.browser.playwright_account_updater import (
     PlaywrightAccountUpdater,
 )
@@ -80,7 +77,7 @@ class FakePlaywrightFactory:
         return self.starter
 
 
-def test_playwright_account_updater_orchestrates_page_objects() -> None:
+def test_execute_calls_page_objects_in_order() -> None:
     page = FakePage(
         text_by_selector={
             selectors.BANK_CONFIRMATION: "Banking details updated successfully.",
@@ -95,11 +92,7 @@ def test_playwright_account_updater_orchestrates_page_objects() -> None:
         page=page,
     )
 
-    updater.login()
-    updater.complete_mfa()
-    updater.update_banking_details(fake_banking_details())
-    updater.update_payment_method(fake_payment_method())
-    result = updater.verify_updates()
+    result = updater.execute(fake_banking_details(), fake_payment_method())
 
     assert page.calls == [
         (
@@ -141,7 +134,7 @@ def test_playwright_account_updater_orchestrates_page_objects() -> None:
     )
 
 
-def test_playwright_account_updater_satisfies_account_update_port() -> None:
+def test_execute_satisfies_account_update_port() -> None:
     updater = PlaywrightAccountUpdater(
         base_url="https://marketplace.dev-challenge.com",
         username="candidate@dev-challenge.com",
@@ -149,11 +142,10 @@ def test_playwright_account_updater_satisfies_account_update_port() -> None:
         mfa_code="0000",
         page=FakePage(),
     )
-
     assert isinstance(updater, AccountUpdatePort)
 
 
-def test_playwright_account_updater_allows_custom_page_urls() -> None:
+def test_execute_uses_custom_urls() -> None:
     page = FakePage()
     updater = PlaywrightAccountUpdater(
         base_url="https://marketplace.dev-challenge.com",
@@ -165,9 +157,7 @@ def test_playwright_account_updater_allows_custom_page_urls() -> None:
         account_url="https://marketplace.dev-challenge.com/profile/payment",
     )
 
-    updater.login()
-    updater.complete_mfa()
-    updater.update_banking_details(fake_banking_details())
+    updater.execute(fake_banking_details(), fake_payment_method())
 
     assert (
         "goto",
@@ -181,48 +171,7 @@ def test_playwright_account_updater_allows_custom_page_urls() -> None:
     ) in page.calls
 
 
-def test_complete_mfa_requires_initialized_page() -> None:
-    updater = PlaywrightAccountUpdater(
-        base_url="https://marketplace.dev-challenge.com",
-        username="candidate@dev-challenge.com",
-        password="Password123!",
-        mfa_code="0000",
-    )
-
-    with pytest.raises(BrowserPageError, match="Playwright page is required"):
-        updater.complete_mfa()
-
-
-def test_complete_mfa_with_injected_page_still_requires_login_first() -> None:
-    updater = PlaywrightAccountUpdater(
-        base_url="https://marketplace.dev-challenge.com",
-        username="candidate@dev-challenge.com",
-        password="Password123!",
-        mfa_code="0000",
-        page=FakePage(),
-    )
-
-    with pytest.raises(BrowserPageError, match=r"login\(\) must complete"):
-        updater.complete_mfa()
-
-
-def test_verify_updates_requires_completed_updates() -> None:
-    updater = PlaywrightAccountUpdater(
-        base_url="https://marketplace.dev-challenge.com",
-        username="candidate@dev-challenge.com",
-        password="Password123!",
-        mfa_code="0000",
-        page=FakePage(),
-    )
-
-    updater.login()
-    updater.complete_mfa()
-
-    with pytest.raises(BrowserPageError, match="must complete before verification"):
-        updater.verify_updates()
-
-
-def test_close_releases_owned_resources_and_unbinds_page() -> None:
+def test_close_releases_owned_resources() -> None:
     factory = FakePlaywrightFactory()
     updater = PlaywrightAccountUpdater(
         base_url="https://marketplace.dev-challenge.com",
@@ -240,11 +189,7 @@ def test_close_releases_owned_resources_and_unbinds_page() -> None:
         "headless": True,
         "slow_mo": 0,
     }
-
     assert factory.context.closed is True
     assert factory.browser.closed is True
     assert factory.playwright.stopped is True
     assert updater.page is None
-
-    with pytest.raises(BrowserPageError, match="Playwright page is required"):
-        updater.complete_mfa()

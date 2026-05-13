@@ -4,7 +4,7 @@ import pytest
 
 from account_details_update.banking_details import BankingDetails
 from account_details_update.http_api.api_account_updater import ApiAccountUpdater
-from account_details_update.http_api.errors import MfaVerificationError, RaziApiError
+from account_details_update.http_api.errors import MfaVerificationError
 from account_details_update.http_api.schemas.authentication import TokenResponse
 from account_details_update.http_api.schemas.banking import BankingUpdateResponse
 from account_details_update.http_api.schemas.payment import PaymentUpdateResponse
@@ -20,7 +20,7 @@ class FakeRaziApiClient:
 
     def request_token(self) -> TokenResponse:
         self.calls.append("request_token")
-        return TokenResponse(mfa_required=False, mfa_token="", message="native")
+        return TokenResponse(mfa_required=True, mfa_token="mfa_tok", message="ok")
 
     def verify_mfa(self, token_response: TokenResponse) -> str:
         self.calls.append("verify_mfa")
@@ -51,15 +51,11 @@ class FakeRaziApiClient:
         )
 
 
-def test_api_account_updater_orchestrates_auth_and_updates_in_order() -> None:
+def test_execute_authenticates_and_updates_in_order() -> None:
     fake_client = FakeRaziApiClient()
     updater = ApiAccountUpdater(client=fake_client)
 
-    updater.login()
-    updater.complete_mfa()
-    updater.update_banking_details(fake_banking_details())
-    updater.update_payment_method(fake_payment_method())
-    result = updater.verify_updates()
+    result = updater.execute(fake_banking_details(), fake_payment_method())
 
     assert fake_client.calls == [
         "request_token",
@@ -71,45 +67,15 @@ def test_api_account_updater_orchestrates_auth_and_updates_in_order() -> None:
     assert result.payment_summary == "Visa ending in 4242 (12/2030)"
 
 
-def test_api_account_updater_satisfies_account_update_port() -> None:
-    updater = ApiAccountUpdater(client=FakeRaziApiClient())
-
-    assert isinstance(updater, AccountUpdatePort)
+def test_execute_satisfies_account_update_port() -> None:
+    assert isinstance(ApiAccountUpdater(client=FakeRaziApiClient()), AccountUpdatePort)
 
 
-def test_complete_mfa_requires_login_first() -> None:
-    updater = ApiAccountUpdater(client=FakeRaziApiClient())
-
-    with pytest.raises(RaziApiError, match="login\\(\\) must be called"):
-        updater.complete_mfa()
-
-
-def test_complete_mfa_propagates_mfa_failure() -> None:
+def test_execute_propagates_mfa_failure() -> None:
     fake_client = FakeRaziApiClient(
         verify_mfa_raises=MfaVerificationError("Invalid or expired MFA session")
     )
-    updater = ApiAccountUpdater(client=fake_client)
-    updater.login()
-
     with pytest.raises(MfaVerificationError):
-        updater.complete_mfa()
-
-
-def test_update_banking_requires_mfa_first() -> None:
-    updater = ApiAccountUpdater(client=FakeRaziApiClient())
-    updater.login()
-
-    with pytest.raises(RaziApiError, match="complete_mfa\\(\\) must be called"):
-        updater.update_banking_details(fake_banking_details())
-
-
-def test_verify_updates_requires_both_updates() -> None:
-    updater = ApiAccountUpdater(client=FakeRaziApiClient())
-    updater.login()
-    updater.complete_mfa()
-    updater.update_banking_details(fake_banking_details())
-
-    with pytest.raises(RaziApiError, match="Banking and payment updates must complete"):
-        updater.verify_updates()
-
-
+        ApiAccountUpdater(client=fake_client).execute(
+            fake_banking_details(), fake_payment_method()
+        )

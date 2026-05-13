@@ -8,18 +8,14 @@ from ..ports import AccountUpdatePort, AccountUpdateResult
 
 
 class UpdateAccountDetails:
-    """Orchestrates the full account details update workflow."""
+    """Application-layer entry point for the account update workflow."""
 
     def __init__(self, account_update_port: AccountUpdatePort) -> None:
-        self._account_update_port = account_update_port
+        self._port = account_update_port
 
     def execute(
         self,
         banking_details: BankingDetails,
         payment_method: PaymentMethod,
     ) -> AccountUpdateResult:
-        self._account_update_port.login()
-        self._account_update_port.complete_mfa()
-        self._account_update_port.update_banking_details(banking_details)
-        self._account_update_port.update_payment_method(payment_method)
-        return self._account_update_port.verify_updates()
+        return self._port.execute(banking_details, payment_method)

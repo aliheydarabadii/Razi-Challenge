@@ -19,19 +19,15 @@ class AccountUpdateResult:
 
 @runtime_checkable
 class AccountUpdatePort(Protocol):
-    """Interface required by the core update use case."""
+    """Single-method port: execute the full account update and return results.
 
-    def login(self) -> None:
-        """Authenticate with the account details system."""
+    Adapters own the internal sequence (auth, update, verify). Callers
+    cannot invoke steps out of order because there is only one step.
+    """
 
-    def complete_mfa(self) -> None:
-        """Complete multi-factor authentication."""
-
-    def update_banking_details(self, banking_details: BankingDetails) -> None:
-        """Update banking details."""
-
-    def update_payment_method(self, payment_method: PaymentMethod) -> None:
-        """Update payment method details."""
-
-    def verify_updates(self) -> AccountUpdateResult:
-        """Return masked confirmation summaries for the updates."""
+    def execute(
+        self,
+        banking_details: BankingDetails,
+        payment_method: PaymentMethod,
+    ) -> AccountUpdateResult:
+        """Perform the full update and return masked confirmation summaries."""

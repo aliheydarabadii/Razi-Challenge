@@ -10,11 +10,9 @@ from typing import Any
 from ..banking_details import BankingDetails
 from ..payment_method import PaymentMethod
 from ..ports import AccountUpdateResult
-from .errors import BrowserPageError
 from .pages.account_page import AccountPage
 from .pages.login_page import LoginPage
 from .pages.mfa_page import MfaPage
-from .pages.page_ready import require_page
 
 DEFAULT_LOGIN_PATH = "/login"
 DEFAULT_ACCOUNT_PATH = "/app/account"
@@ -39,7 +37,7 @@ class PlaywrightAccountUpdater:
         default=None, kw_only=True
     )
 
-    # ── Runtime state (not constructor parameters) ────────────────────────────
+    # ── Runtime state ─────────────────────────────────────────────────────────
 
     _owns_page: bool = field(default=False, init=False)
     _playwright: Any | None = field(default=None, init=False)
@@ -48,11 +46,6 @@ class PlaywrightAccountUpdater:
     login_page: LoginPage = field(init=False)
     mfa_page: MfaPage = field(init=False)
     account_page: AccountPage = field(init=False)
-    _login_completed: bool = field(default=False, init=False)
-    _mfa_completed: bool = field(default=False, init=False)
-    _account_page_opened: bool = field(default=False, init=False)
-    _banking_updated: bool = field(default=False, init=False)
-    _payment_updated: bool = field(default=False, init=False)
 
     def __post_init__(self) -> None:
         self.base_url = self.base_url.rstrip("/")
@@ -79,35 +72,22 @@ class PlaywrightAccountUpdater:
 
     # ── AccountUpdatePort ─────────────────────────────────────────────────────
 
-    def login(self) -> None:
+    def execute(
+        self,
+        banking_details: BankingDetails,
+        payment_method: PaymentMethod,
+    ) -> AccountUpdateResult:
         self._ensure_page()
         self.login_page.open(self.login_url)
         self.login_page.login(self.username, self.password)
-        self._login_completed = True
-
-    def complete_mfa(self) -> None:
-        self._require_logged_in()
         self.mfa_page.verify(self.mfa_code)
-        self._mfa_completed = True
-
-    def update_banking_details(self, banking_details: BankingDetails) -> None:
-        self._require_mfa_completed()
-        self._open_account_page_once()
+        self.account_page.open(self.account_url)
         self.account_page.update_banking(banking_details)
-        self._banking_updated = True
-
-    def update_payment_method(self, payment_method: PaymentMethod) -> None:
-        self._require_mfa_completed()
-        self._open_account_page_once()
         self.account_page.update_payment(payment_method)
-        self._payment_updated = True
-
-    def verify_updates(self) -> AccountUpdateResult:
-        self._require_updates_completed()
         return self.account_page.verify_updates()
 
     def close(self) -> None:
-        """Close Playwright resources and reset state for a clean re-entry."""
+        """Close Playwright resources owned by this adapter."""
         if self._context is not None:
             self._context.close()
             self._context = None
@@ -120,11 +100,6 @@ class PlaywrightAccountUpdater:
         if self._owns_page and self.page is not None:
             self.page = None
             self._bind_page_objects(None)
-        self._login_completed = False
-        self._mfa_completed = False
-        self._account_page_opened = False
-        self._banking_updated = False
-        self._payment_updated = False
 
     # ── Private helpers ───────────────────────────────────────────────────────
 
@@ -163,33 +138,6 @@ class PlaywrightAccountUpdater:
 
         self._bind_page_objects(self.page)
         return self.page
-
-    def _require_logged_in(self) -> None:
-        require_page(self.page)
-        if not self._login_completed:
-            raise BrowserPageError(
-                "login() must complete before continuing browser account updates."
-            )
-
-    def _require_mfa_completed(self) -> None:
-        self._require_logged_in()
-        if not self._mfa_completed:
-            raise BrowserPageError(
-                "complete_mfa() must complete before updating account details."
-            )
-
-    def _require_updates_completed(self) -> None:
-        self._require_mfa_completed()
-        if not self._banking_updated or not self._payment_updated:
-            raise BrowserPageError(
-                "Banking and payment updates must complete before verification."
-            )
-
-    def _open_account_page_once(self) -> None:
-        if self._account_page_opened:
-            return
-        self.account_page.open(self.account_url)
-        self._account_page_opened = True
 
 
 def _join_url(base_url: str, path: str) -> str:
