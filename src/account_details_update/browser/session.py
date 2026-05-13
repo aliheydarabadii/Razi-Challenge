@@ -18,9 +18,7 @@ class BrowserSession:
 
     headed: bool = False
     slow_mo_ms: int = 0
-    _playwright_factory: Callable[[], Any] | None = field(
-        default=None, kw_only=True
-    )
+    _playwright_factory: Callable[[], Any] | None = field(default=None, kw_only=True)
 
     page: Any | None = field(default=None, init=False)
     _owns_page: bool = field(default=False, init=False)

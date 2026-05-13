@@ -74,6 +74,8 @@ def _run_api(
         username=settings.username,
         password=settings.password.get_secret_value(),
         mfa_code=settings.mfa_code.get_secret_value(),
+        max_retries=settings.api_max_retries,
+        retry_max_wait=settings.api_retry_max_wait,
     ) as client:
         return UpdateAccountDetailsHandler(
             port=ApiAccountUpdater(client=client)

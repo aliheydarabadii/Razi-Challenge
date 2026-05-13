@@ -45,6 +45,8 @@ _RETRYABLE = (RateLimitError, ServerError, httpx.TransportError)
 
 # Seconds before an individual HTTP call is abandoned.
 _DEFAULT_TIMEOUT = 30.0
+_DEFAULT_MAX_RETRIES = 5
+_DEFAULT_RETRY_MAX_WAIT = 30
 
 _T = TypeVar("_T")
 
@@ -68,6 +70,8 @@ class RaziApiClient:
     _: KW_ONLY
 
     timeout: float = _DEFAULT_TIMEOUT
+    max_retries: int = _DEFAULT_MAX_RETRIES
+    retry_max_wait: int = _DEFAULT_RETRY_MAX_WAIT
     _http_client: InitVar[httpx.Client | None] = None
     _retrying: InitVar[Retrying | None] = None
 
@@ -224,7 +228,11 @@ class RaziApiClient:
         self.base_url = self.base_url.rstrip("/")
         self._owns_http = _http_client is None
         self._http = _http_client or httpx.Client(timeout=self.timeout)
-        self._retry_policy = _retrying if _retrying is not None else _default_retrying()
+        self._retry_policy = (
+            _retrying
+            if _retrying is not None
+            else _default_retrying(self.max_retries, self.retry_max_wait)
+        )
 
     def __enter__(self) -> RaziApiClient:
         return self
@@ -239,11 +247,11 @@ class RaziApiClient:
             self._http.close()
 
 
-def _default_retrying() -> Retrying:
+def _default_retrying(max_retries: int, retry_max_wait: int) -> Retrying:
     return Retrying(
         retry=retry_if_exception_type(_RETRYABLE),
-        wait=wait_exponential(multiplier=1, min=1, max=30),
-        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=1, min=1, max=retry_max_wait),
+        stop=stop_after_attempt(max_retries),
         reraise=True,
         before_sleep=before_sleep_log(_logger, logging.WARNING),
     )

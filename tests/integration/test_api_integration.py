@@ -135,9 +135,9 @@ def test_full_api_flow_via_use_case(settings: Settings) -> None:
         password=settings.password.get_secret_value(),
         mfa_code=settings.mfa_code.get_secret_value(),
     ) as c:
-        result = UpdateAccountDetailsHandler(
-            port=ApiAccountUpdater(client=c)
-        ).handle(command)
+        result = UpdateAccountDetailsHandler(port=ApiAccountUpdater(client=c)).handle(
+            command
+        )
 
     assert settings.bank_routing[-4:] in result.banking_summary
     assert settings.bank_account[-4:] in result.banking_summary

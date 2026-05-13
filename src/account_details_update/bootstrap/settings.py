@@ -53,6 +53,11 @@ class Settings(BaseSettings):
     card_expiry_year: str = Field(default="2035", alias="CARD_EXPIRY_YEAR")
     card_cvc: str = Field(default="123", alias="CARD_CVC")
 
+    # ── API retry ─────────────────────────────────────────────────────────────
+
+    api_max_retries: int = Field(default=5, alias="API_MAX_RETRIES")
+    api_retry_max_wait: int = Field(default=30, alias="API_RETRY_MAX_WAIT")
+
     # ── Validators ────────────────────────────────────────────────────────────
 
     @field_validator("challenge_base_url", "api_base_url")

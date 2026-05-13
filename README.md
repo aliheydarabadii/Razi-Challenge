@@ -214,3 +214,5 @@ All errors are caught in the CLI and printed to stderr with a non-zero exit code
 | `CARD_CVC` | `123` | CVC (3–4 digits) |
 | `HEADED` | `false` | Run browser in headed mode |
 | `SLOW_MO_MS` | `0` | Playwright slow-motion delay (ms) |
+| `API_MAX_RETRIES` | `5` | Max retry attempts for 429/5xx/transport errors |
+| `API_RETRY_MAX_WAIT` | `30` | Max seconds between retries (exponential backoff cap) |
