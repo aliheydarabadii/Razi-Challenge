@@ -10,6 +10,7 @@ from ..application.update_account_details import UpdateAccountDetailsHandler
 from ..banking_details import BankingDetails
 from ..browser.errors import BrowserPageError
 from ..browser.playwright_account_updater import PlaywrightAccountUpdater
+from ..browser.session import BrowserSession
 from ..http_api.api_account_updater import ApiAccountUpdater
 from ..http_api.errors import RaziApiError
 from ..http_api.razi_api_client import RaziApiClient
@@ -49,13 +50,13 @@ def _execute(command: str, settings: Settings) -> AccountUpdateResult:
     )
 
     if command == "browser":
+        session = BrowserSession(headed=settings.headed, slow_mo_ms=settings.slow_mo_ms)
         with PlaywrightAccountUpdater(
             base_url=settings.challenge_base_url,
             username=settings.username,
             password=settings.password.get_secret_value(),
             mfa_code=settings.mfa_code.get_secret_value(),
-            headed=settings.headed,
-            slow_mo_ms=settings.slow_mo_ms,
+            session=session,
         ) as updater:
             return UpdateAccountDetailsHandler(port=updater).handle(cmd)
 

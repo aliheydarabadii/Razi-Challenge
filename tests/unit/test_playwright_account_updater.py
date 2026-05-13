@@ -4,6 +4,7 @@ from account_details_update.browser import selectors
 from account_details_update.browser.playwright_account_updater import (
     PlaywrightAccountUpdater,
 )
+from account_details_update.browser.session import BrowserSession
 from account_details_update.ports import AccountUpdatePort, AccountUpdateResult
 from tests.support.browser_fakes import FakePage
 from tests.support.fake_data import fake_banking_details, fake_payment_method
@@ -77,6 +78,17 @@ class FakePlaywrightFactory:
         return self.starter
 
 
+def _updater(page: FakePage, **kwargs: object) -> PlaywrightAccountUpdater:
+    return PlaywrightAccountUpdater(
+        base_url="https://marketplace.dev-challenge.com",
+        username="candidate@dev-challenge.com",
+        password="Password123!",
+        mfa_code="0000",
+        session=BrowserSession.with_page(page),
+        **kwargs,  # type: ignore[arg-type]
+    )
+
+
 def test_execute_calls_page_objects_in_order() -> None:
     page = FakePage(
         text_by_selector={
@@ -84,15 +96,8 @@ def test_execute_calls_page_objects_in_order() -> None:
             selectors.CARD_CONFIRMATION: "Payment method updated successfully.",
         }
     )
-    updater = PlaywrightAccountUpdater(
-        base_url="https://marketplace.dev-challenge.com",
-        username="candidate@dev-challenge.com",
-        password="Password123!",
-        mfa_code="0000",
-        page=page,
-    )
 
-    result = updater.execute(fake_banking_details(), fake_payment_method())
+    result = _updater(page).execute(fake_banking_details(), fake_payment_method())
 
     assert page.calls == [
         (
@@ -135,24 +140,13 @@ def test_execute_calls_page_objects_in_order() -> None:
 
 
 def test_execute_satisfies_account_update_port() -> None:
-    updater = PlaywrightAccountUpdater(
-        base_url="https://marketplace.dev-challenge.com",
-        username="candidate@dev-challenge.com",
-        password="Password123!",
-        mfa_code="0000",
-        page=FakePage(),
-    )
-    assert isinstance(updater, AccountUpdatePort)
+    assert isinstance(_updater(FakePage()), AccountUpdatePort)
 
 
 def test_execute_uses_custom_urls() -> None:
     page = FakePage()
-    updater = PlaywrightAccountUpdater(
-        base_url="https://marketplace.dev-challenge.com",
-        username="candidate@dev-challenge.com",
-        password="Password123!",
-        mfa_code="0000",
-        page=page,
+    updater = _updater(
+        page,
         login_url="https://marketplace.dev-challenge.com/sign-in",
         account_url="https://marketplace.dev-challenge.com/profile/payment",
     )
@@ -171,18 +165,19 @@ def test_execute_uses_custom_urls() -> None:
     ) in page.calls
 
 
-def test_close_releases_owned_resources() -> None:
+def test_close_releases_owned_browser_resources() -> None:
     factory = FakePlaywrightFactory()
+    session = BrowserSession(_playwright_factory=factory)
     updater = PlaywrightAccountUpdater(
         base_url="https://marketplace.dev-challenge.com",
         username="candidate@dev-challenge.com",
         password="Password123!",
         mfa_code="0000",
-        _playwright_factory=factory,
+        session=session,
     )
 
     with updater as active:
-        assert active.page is factory.context.page
+        assert active.session.page is factory.context.page
 
     assert factory.starter.started is True
     assert factory.playwright.chromium.launch_kwargs == {
@@ -192,4 +187,4 @@ def test_close_releases_owned_resources() -> None:
     assert factory.context.closed is True
     assert factory.browser.closed is True
     assert factory.playwright.stopped is True
-    assert updater.page is None
+    assert session.page is None

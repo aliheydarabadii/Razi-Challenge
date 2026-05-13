@@ -24,6 +24,7 @@ from account_details_update.bootstrap.settings import Settings
 from account_details_update.browser.playwright_account_updater import (
     PlaywrightAccountUpdater,
 )
+from account_details_update.browser.session import BrowserSession
 from account_details_update.payment_method import PaymentMethod
 
 
@@ -53,13 +54,13 @@ def test_full_browser_flow(settings: Settings) -> None:
         ),
     )
 
+    session = BrowserSession(headed=settings.headed, slow_mo_ms=settings.slow_mo_ms)
     with PlaywrightAccountUpdater(
         base_url=settings.challenge_base_url,
         username=settings.username,
         password=settings.password.get_secret_value(),
         mfa_code=settings.mfa_code.get_secret_value(),
-        headed=settings.headed,
-        slow_mo_ms=settings.slow_mo_ms,
+        session=session,
     ) as updater:
         result = UpdateAccountDetailsHandler(port=updater).handle(command)
 
