@@ -294,7 +294,7 @@ def test_owned_http_client_is_closed_on_exit() -> None:
 # ── error response parsing ────────────────────────────────────────────────────
 
 
-def test_raise_for_status_handles_non_dict_json_body() -> None:
+def test_server_error_is_raised_when_response_body_is_not_a_dict() -> None:
     client, _ = _make_client(post_response=httpx.Response(500, json=["error", "list"]))
     with pytest.raises(ServerError):
         client.request_token()
