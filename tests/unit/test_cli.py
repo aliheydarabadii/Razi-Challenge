@@ -105,7 +105,9 @@ def test_build_payment_method_raises_on_invalid_card_number() -> None:
 # ── main — browser command ────────────────────────────────────────────────────
 
 
-def test_main_browser_prints_summary_and_returns_zero(capsys) -> None:  # type: ignore[no-untyped-def]
+def test_main_browser_prints_summary_and_returns_zero(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     with (
         patch(f"{_CLI}.load_settings", return_value=_test_settings()),
         patch(f"{_CLI}.PlaywrightAccountUpdater") as MockUpdater,
@@ -121,7 +123,9 @@ def test_main_browser_prints_summary_and_returns_zero(capsys) -> None:  # type: 
     assert "Visa" in out
 
 
-def test_main_browser_returns_one_on_configuration_error(capsys) -> None:  # type: ignore[no-untyped-def]
+def test_main_browser_returns_one_on_configuration_error(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     with patch(
         f"{_CLI}.load_settings",
         return_value=_test_settings(bank_routing="BAD"),
@@ -132,7 +136,9 @@ def test_main_browser_returns_one_on_configuration_error(capsys) -> None:  # typ
     assert "Configuration error" in capsys.readouterr().err
 
 
-def test_main_browser_returns_one_on_browser_page_error(capsys) -> None:  # type: ignore[no-untyped-def]
+def test_main_browser_returns_one_on_browser_page_error(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     from account_details_update.browser.errors import BrowserPageError
 
     with (
@@ -151,7 +157,9 @@ def test_main_browser_returns_one_on_browser_page_error(capsys) -> None:  # type
 # ── main — api command ────────────────────────────────────────────────────────
 
 
-def test_main_api_prints_summary_and_returns_zero(capsys) -> None:  # type: ignore[no-untyped-def]
+def test_main_api_prints_summary_and_returns_zero(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     with (
         patch(f"{_CLI}.load_settings", return_value=_test_settings()),
         patch(f"{_CLI}.RaziApiClient") as MockClient,
@@ -167,7 +175,9 @@ def test_main_api_prints_summary_and_returns_zero(capsys) -> None:  # type: igno
     assert "Visa" in out
 
 
-def test_main_api_returns_one_on_configuration_error(capsys) -> None:  # type: ignore[no-untyped-def]
+def test_main_api_returns_one_on_configuration_error(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     with patch(
         f"{_CLI}.load_settings",
         return_value=_test_settings(bank_routing="BAD"),
@@ -178,7 +188,9 @@ def test_main_api_returns_one_on_configuration_error(capsys) -> None:  # type: i
     assert "Configuration error" in capsys.readouterr().err
 
 
-def test_main_api_returns_one_on_api_error(capsys) -> None:  # type: ignore[no-untyped-def]
+def test_main_api_returns_one_on_api_error(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     with (
         patch(f"{_CLI}.load_settings", return_value=_test_settings()),
         patch(f"{_CLI}.RaziApiClient") as MockClient,

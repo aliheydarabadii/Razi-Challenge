@@ -222,14 +222,8 @@ def test_request_token_retries_on_rate_limit_then_succeeds() -> None:
             json={"mfa_required": True, "mfa_token": "mfa_abc", "message": "ok"},
         ),
     ]
-    client = RaziApiClient(
-        base_url="https://api.example.com",
-        username="candidate@dev-challenge.com",
-        password="Password123!",
-        mfa_code="1234",
-        _http_client=http,
-        _retrying=_FAST_RETRY,
-    )
+    client, _ = _make_client(post_response=None, retrying=_FAST_RETRY)
+    client._http = http
 
     token = client.request_token()
 
@@ -250,14 +244,8 @@ def test_update_banking_retries_on_server_error_then_succeeds() -> None:
             },
         ),
     ]
-    client = RaziApiClient(
-        base_url="https://api.example.com",
-        username="candidate@dev-challenge.com",
-        password="Password123!",
-        mfa_code="1234",
-        _http_client=http,
-        _retrying=_FAST_RETRY,
-    )
+    client, _ = _make_client(put_response=None, retrying=_FAST_RETRY)
+    client._http = http
     banking = BankingDetails(routing_number="123456789", account_number="1234567890")
 
     result = client.update_banking("bearer", banking)
@@ -267,15 +255,9 @@ def test_update_banking_retries_on_server_error_then_succeeds() -> None:
 
 
 def test_request_token_raises_after_exhausting_retries() -> None:
-    http = MagicMock(spec=httpx.Client)
-    http.post.return_value = httpx.Response(429, json={"error": "Rate limit"})
-    client = RaziApiClient(
-        base_url="https://api.example.com",
-        username="candidate@dev-challenge.com",
-        password="Password123!",
-        mfa_code="1234",
-        _http_client=http,
-        _retrying=_FAST_RETRY,
+    client, http = _make_client(
+        post_response=httpx.Response(429, json={"error": "Rate limit"}),
+        retrying=_FAST_RETRY,
     )
 
     with pytest.raises(RateLimitError):
@@ -329,15 +311,9 @@ def test_raise_for_status_handles_non_dict_json_body() -> None:
 
 
 def test_authentication_error_is_not_retried() -> None:
-    http = MagicMock(spec=httpx.Client)
-    http.post.return_value = httpx.Response(401, json={"error": "Invalid credentials"})
-    client = RaziApiClient(
-        base_url="https://api.example.com",
-        username="candidate@dev-challenge.com",
-        password="Password123!",
-        mfa_code="1234",
-        _http_client=http,
-        _retrying=_FAST_RETRY,
+    client, http = _make_client(
+        post_response=httpx.Response(401, json={"error": "Invalid credentials"}),
+        retrying=_FAST_RETRY,
     )
 
     with pytest.raises(AuthenticationError):
@@ -347,15 +323,9 @@ def test_authentication_error_is_not_retried() -> None:
 
 
 def test_validation_error_is_not_retried() -> None:
-    http = MagicMock(spec=httpx.Client)
-    http.put.return_value = httpx.Response(422, json={"error": "Invalid routing"})
-    client = RaziApiClient(
-        base_url="https://api.example.com",
-        username="candidate@dev-challenge.com",
-        password="Password123!",
-        mfa_code="1234",
-        _http_client=http,
-        _retrying=_FAST_RETRY,
+    client, http = _make_client(
+        put_response=httpx.Response(422, json={"error": "Invalid routing"}),
+        retrying=_FAST_RETRY,
     )
     banking = BankingDetails(routing_number="123456789", account_number="1234567890")
 

@@ -8,6 +8,21 @@ from account_details_update.banking_details import BankingDetails
 from account_details_update.payment_method import PaymentMethod
 
 
+def _valid_payment(**overrides: str) -> PaymentMethod:
+    kwargs: dict[str, str] = dict(
+        cardholder_name="Test Candidate",
+        card_number="4242424242424242",
+        expiry_month="12",
+        expiry_year="2030",
+        cvc="123",
+    )
+    kwargs.update(overrides)
+    return PaymentMethod(**kwargs)
+
+
+# ── BankingDetails ────────────────────────────────────────────────────────────
+
+
 def test_valid_banking_details() -> None:
     banking_details = BankingDetails(
         routing_number="123456789",
@@ -33,14 +48,11 @@ def test_invalid_account_number_length() -> None:
         BankingDetails(routing_number="123456789", account_number="123")
 
 
+# ── PaymentMethod ─────────────────────────────────────────────────────────────
+
+
 def test_valid_payment_method() -> None:
-    payment_method = PaymentMethod(
-        cardholder_name="Test Candidate",
-        card_number="4242424242424242",
-        expiry_month="12",
-        expiry_year="2030",
-        cvc="123",
-    )
+    payment_method = _valid_payment()
 
     assert payment_method.cardholder_name == "Test Candidate"
     assert payment_method.card_number == "4242424242424242"
@@ -48,68 +60,32 @@ def test_valid_payment_method() -> None:
 
 def test_missing_cardholder_name() -> None:
     with pytest.raises(ValueError, match="cardholder_name is required"):
-        PaymentMethod(
-            cardholder_name="",
-            card_number="4242424242424242",
-            expiry_month="12",
-            expiry_year="2030",
-            cvc="123",
-        )
+        _valid_payment(cardholder_name="")
 
 
 def test_invalid_card_number_non_digit() -> None:
     with pytest.raises(ValueError, match="card_number must contain only digits"):
-        PaymentMethod(
-            cardholder_name="Test Candidate",
-            card_number="424242424242424X",
-            expiry_month="12",
-            expiry_year="2030",
-            cvc="123",
-        )
+        _valid_payment(card_number="424242424242424X")
 
 
 def test_invalid_card_number_length() -> None:
     with pytest.raises(ValueError, match="card_number must be 13 to 19 digits"):
-        PaymentMethod(
-            cardholder_name="Test Candidate",
-            card_number="424242424242",
-            expiry_month="12",
-            expiry_year="2030",
-            cvc="123",
-        )
+        _valid_payment(card_number="424242424242")
 
 
 def test_invalid_cvc_length() -> None:
     with pytest.raises(ValueError, match="cvc must be 3 or 4 digits"):
-        PaymentMethod(
-            cardholder_name="Test Candidate",
-            card_number="4242424242424242",
-            expiry_month="12",
-            expiry_year="2030",
-            cvc="12",
-        )
+        _valid_payment(cvc="12")
 
 
 def test_luhn_invalid_card_rejected() -> None:
     with pytest.raises(ValueError, match="Luhn"):
-        PaymentMethod(
-            cardholder_name="Test Candidate",
-            card_number="4242424242424241",  # last digit off by one
-            expiry_month="12",
-            expiry_year="2030",
-            cvc="123",
-        )
+        _valid_payment(card_number="4242424242424241")  # last digit off by one
 
 
 def test_past_expiry_year() -> None:
     with pytest.raises(ValueError, match="card has already expired"):
-        PaymentMethod(
-            cardholder_name="Test Candidate",
-            card_number="4242424242424242",
-            expiry_month="12",
-            expiry_year=str(date.today().year - 1),
-            cvc="123",
-        )
+        _valid_payment(expiry_year=str(date.today().year - 1))
 
 
 def test_card_expired_earlier_this_year_is_rejected() -> None:
@@ -117,10 +93,4 @@ def test_card_expired_earlier_this_year_is_rejected() -> None:
     if today.month == 1:
         pytest.skip("no elapsed months in January to test against")
     with pytest.raises(ValueError, match="card has already expired"):
-        PaymentMethod(
-            cardholder_name="Test Candidate",
-            card_number="4242424242424242",
-            expiry_month=str(today.month - 1),
-            expiry_year=str(today.year),
-            cvc="123",
-        )
+        _valid_payment(expiry_month=str(today.month - 1), expiry_year=str(today.year))

@@ -7,6 +7,7 @@ from account_details_update.application.update_account_details import (
 from account_details_update.banking_details import BankingDetails
 from account_details_update.payment_method import PaymentMethod
 from account_details_update.ports import AccountUpdateResult
+from tests.support.fake_data import fake_banking_details, fake_payment_method
 
 
 class FakeAccountUpdatePort:
@@ -32,14 +33,8 @@ class FakeAccountUpdatePort:
 def test_handle_delegates_command_to_port() -> None:
     port = FakeAccountUpdatePort()
     handler = UpdateAccountDetailsHandler(port=port)
-    banking = BankingDetails(routing_number="123456789", account_number="1234567890")
-    payment = PaymentMethod(
-        cardholder_name="Test Candidate",
-        card_number="4242424242424242",
-        expiry_month="12",
-        expiry_year="2035",
-        cvc="123",
-    )
+    banking = fake_banking_details()
+    payment = fake_payment_method()
     command = UpdateAccountDetailsCommand(
         banking_details=banking,
         payment_method=payment,
