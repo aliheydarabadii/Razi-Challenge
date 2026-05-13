@@ -43,12 +43,11 @@ def _test_settings(**overrides: object) -> Settings:
     return Settings.model_construct(**base)
 
 
-def _mock_updater_cm(MockClass: MagicMock) -> MagicMock:
+def _mock_updater_cm(MockClass: MagicMock) -> None:
     """Wire __enter__/__exit__ so the mock works as a context manager."""
     instance = MockClass.return_value
     instance.__enter__ = MagicMock(return_value=instance)
     instance.__exit__ = MagicMock(return_value=None)
-    return instance
 
 
 # ── build_parser ──────────────────────────────────────────────────────────────

@@ -19,8 +19,7 @@ from account_details_update.http_api.schemas.authentication import TokenResponse
 from account_details_update.payment_method import PaymentMethod
 from tests.support.fake_data import fake_banking_details
 
-# Fast retrying used by all existing tests — no wait, single attempt.
-# This keeps tests instant while still exercising the retry code path.
+# Default policy: no wait, single attempt — tests that don't care about retry count.
 _NO_RETRY = Retrying(
     retry=retry_if_exception_type((RateLimitError, ServerError, httpx.TransportError)),
     wait=wait_none(),

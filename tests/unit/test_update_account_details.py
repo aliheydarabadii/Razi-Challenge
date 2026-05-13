@@ -12,7 +12,6 @@ from tests.support.fake_data import fake_banking_details, fake_payment_method
 
 class FakeAccountUpdatePort:
     def __init__(self) -> None:
-        self.called = False
         self.received_banking: BankingDetails | None = None
         self.received_payment: PaymentMethod | None = None
 
@@ -21,7 +20,6 @@ class FakeAccountUpdatePort:
         banking_details: BankingDetails,
         payment_method: PaymentMethod,
     ) -> AccountUpdateResult:
-        self.called = True
         self.received_banking = banking_details
         self.received_payment = payment_method
         return AccountUpdateResult(
@@ -42,7 +40,6 @@ def test_handle_delegates_command_to_port() -> None:
 
     result = handler.handle(command)
 
-    assert port.called
     assert port.received_banking is banking
     assert port.received_payment is payment
     assert result == AccountUpdateResult(
