@@ -142,11 +142,13 @@ curl -s -X POST \
 
 # Step 2 — verify MFA and obtain bearer token
 MFA_TOKEN=mfa_abc123...
-TOKEN=$(curl -s -X POST \
+VERIFY_RESP=$(curl -s -X POST \
   -H "Content-Type: application/json" \
   -d "{\"mfa_token\":\"$MFA_TOKEN\",\"code\":\"1234\"}" \
-  $BASE/auth/mfa/verify \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+  $BASE/auth/mfa/verify)
+echo "$VERIFY_RESP"
+# → {"access_token":"eyJ...","token_type":"Bearer","expires_in":3600,...}
+TOKEN=$(echo "$VERIFY_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 
 # Step 3 — update banking details
 curl -s -X PUT $BASE/account/banking \
